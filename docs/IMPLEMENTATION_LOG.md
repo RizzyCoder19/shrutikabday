@@ -137,3 +137,38 @@
 - **Priority 8 — Real Deckled Cotton Paper Letter ([app/globals.css](file:///c:/Users/ADMIN/Desktop/Ghelikabday/app/globals.css), [BirthdayLetterScene.tsx](file:///c:/Users/ADMIN/Desktop/Ghelikabday/components/scenes/BirthdayLetterScene.tsx))**:
   - Added `Caveat` handwriting font (`--font-letter-hand`), replaced geometric borders/callout boxes with deckled ivory cotton grain (`PAPER_GRAIN_SVG`, `PAPER_FIBRE_SVG`, directional lighting gradient), wet-ink self-writing with traveling fountain-pen nib, and SVG stroke `— Umar` signature fitting within one screen (`sheetH: 515`, `scrollH === clientH === 800` at `360×800`).
 - **Post-Final-Edit Verification**: `npx tsc --noEmit` (`0`), `npm run lint` (`0`), `npm run build` (`0`, `26.6s`, `/` `87.9 kB`, First Load JS `191 kB`), `qa-v49-matrix.mjs` (`overflowFailures: []`, `tiltChecks` portrait-only verified across `360×800`, `390×844`, `430×932`, `844×390`, `1440×900`, `p2` state preservation verified, `letter360` zero scroll), and `qa-journey.mjs` (`TRACE_TOTAL: 13`, `01→12→01`, `CONSOLE_ERRORS: []`, `LAN_HTTP_STATUS: 200`).
+
+---
+
+## Version 5.0 — The Final Soundtrack Handoff & A Meaningful Galaxy Ending
+
+### 1. Identified Second Soundtrack Asset
+- **File Discovered**: `public/audio/ha tu hai.m4a` (5,613,134 bytes)
+- Discovered through direct audit of project audio directories (`public/audio/` and `music/`).
+- Verified exact asset path: `/audio/ha tu hai.m4a`.
+
+### 2. Chapter 11 Audio Fadeout (`WRAP_UP`)
+- **Immediate Fadeout**: Configured `content/audio-cues.ts` with `volume: 0, fadeMs: 1500, trackSrc: null` for scene `WRAP_UP`.
+- **Music Cue Manager Lifecycle**: Introduced `isEndingPhase` lock and `fadePrimaryToSilence(1500)`.
+- When Chapter 11 mounts, `primaryAudio` immediately ramps down to 0 over 1.5 seconds regardless of current playback position, then pauses and stays silent.
+- Normal `sync()` and `swellVolume()` are locked out so the old track cannot restart or increase in volume during Chapter 11 reading.
+
+### 3. Chapter 11 Button Handoff ("LET'S WRAP THIS UP")
+- **Direct Gesture Initiation**: In `components/scenes/WrapUpScene.tsx`, `musicCueManager.startEndingTrack(soundEnabled)` is triggered directly inside `handleLaunchGalaxy` user click handler.
+- **Starting Parameters**: Track starts from `currentTime = 0`, reaches full volume (`1.0`) with a smooth 180ms anti-pop ramp, respecting mute status.
+- **Star-Warp Plunge**: Audio and camera warp occur synchronously without delay.
+
+### 4. Robust Two-Track Audio Lifecycle
+- `MusicCueManager` maintains separate lifecycles for `primaryAudio` (`lut-gaye.mp3`) and `endingAudio` (`ha tu hai.m4a`).
+- Eliminates race conditions (rapid clicking, strict mode unmounting, failed play promises).
+- Explicit replay via `reset()` stops and resets `endingAudio` to 0:00 and restores `primaryAudio` from 0:00.
+
+### 5. Chapter 12 Progressive Emotional Reveal & Galaxy Choreography
+- **Initial Immersion**: Galaxy settles freely for 7.5 seconds with unhindered OrbitControls and photo planets.
+- **Progressive Message Sequence**:
+  - Beat 1 (7.5s): *"And one last thing, Gheli..."*
+  - Beat 2 (11.5s): *"You don't have to remember every little thing in here."*
+  - Beat 3 (16.0s): *"Just remember that, somewhere, someone thought you were worth making an entire universe for."*
+  - Beat 4 (21.5s): *"And I hope, whenever you look up at the stars, one of them makes you smile."*
+  - Beat 5 (26.5s): *"— Umar"* (intimate signature, no repeat of "secret admirer").
+- **Typography & Interaction**: Editorial serif typography with warm rose/champagne tones, non-intrusive backdrop, full interactive OrbitControls maintained throughout.

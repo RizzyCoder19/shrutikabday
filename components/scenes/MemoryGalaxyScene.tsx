@@ -99,6 +99,30 @@ export function MemoryGalaxyScene() {
   const [webglError, setWebglError] = useState(false);
   const [selectedSrc, setSelectedSrc] = useState<string | null>(null);
   const [modalImgReady, setModalImgReady] = useState(false);
+  const [finalMessageStep, setFinalMessageStep] = useState<number>(0);
+
+  // Progressive final cinematic reveal pacing:
+  // Step 0: Galaxy establishes and settles freely with opening music (0-7s)
+  // Step 1: "And one last thing, Gheli..."
+  // Step 2: "You don't have to remember every little thing in here."
+  // Step 3: "Just remember that, somewhere, someone thought you were worth making an entire universe for."
+  // Step 4: "And I hope, whenever you look up at the stars, one of them makes you smile."
+  // Step 5: "— Umar"
+  useEffect(() => {
+    const t1 = setTimeout(() => setFinalMessageStep(1), 7500);
+    const t2 = setTimeout(() => setFinalMessageStep(2), 11500);
+    const t3 = setTimeout(() => setFinalMessageStep(3), 16000);
+    const t4 = setTimeout(() => setFinalMessageStep(4), 21500);
+    const t5 = setTimeout(() => setFinalMessageStep(5), 26500);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+      clearTimeout(t5);
+    };
+  }, []);
 
   const closeSelectedMemory = useCallback(() => {
     setSelectedSrc(null);
@@ -769,7 +793,7 @@ export function MemoryGalaxyScene() {
         style={{ display: "block", width: "100%", height: "100%", touchAction: "none" }}
       />
 
-      {/* Poetic Caption Overlay */}
+      {/* Poetic Caption & Final Cinematic Message Overlay */}
       <div
         style={{
           position: "fixed",
@@ -780,30 +804,154 @@ export function MemoryGalaxyScene() {
           padding: "0 1.25rem",
           pointerEvents: "none",
           zIndex: 25,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "0.45rem",
         }}
       >
-        <p
-          style={{
-            fontFamily: "var(--font-serif)",
-            fontStyle: "italic",
-            fontSize: "clamp(1.1rem, 2.5vw, 1.55rem)",
-            color: "rgba(255, 242, 228, 0.88)",
-            textShadow: "0 2px 18px rgba(0, 0, 0, 0.95)",
-          }}
-        >
-          All these little moments, together, make one beautiful universe.
-        </p>
-        <p
-          style={{
-            fontSize: "0.72rem",
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            color: "rgba(233, 199, 125, 0.65)",
-            marginTop: "0.35rem",
-          }}
-        >
-          Drag to orbit • Zoom in to discover • Tap any star
-        </p>
+        {finalMessageStep === 0 && (
+          <div
+            style={{
+              transition: "opacity 1.2s ease",
+              opacity: 1,
+            }}
+          >
+            <p
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontStyle: "italic",
+                fontSize: "clamp(1.1rem, 2.5vw, 1.55rem)",
+                color: "rgba(255, 242, 228, 0.88)",
+                textShadow: "0 2px 18px rgba(0, 0, 0, 0.95)",
+              }}
+            >
+              All these little moments, together, make one beautiful universe.
+            </p>
+            <p
+              style={{
+                fontSize: "0.72rem",
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: "rgba(233, 199, 125, 0.65)",
+                marginTop: "0.35rem",
+              }}
+            >
+              Drag to orbit • Zoom in to discover • Tap any star
+            </p>
+          </div>
+        )}
+
+        {finalMessageStep >= 1 && (
+          <div
+            style={{
+              maxWidth: "min(92vw, 36rem)",
+              width: "100%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "0.42rem",
+              pointerEvents: "none",
+            }}
+          >
+            {/* Beat 1: And one last thing, Gheli... */}
+            <p
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontStyle: "italic",
+                fontSize: "clamp(1.18rem, 3.2vw, 1.62rem)",
+                color: "#FFF5E8",
+                textShadow: "0 2px 18px rgba(0, 0, 0, 0.95)",
+                lineHeight: 1.35,
+                margin: 0,
+                opacity: finalMessageStep >= 1 ? 1 : 0,
+                transition: "opacity 1.4s cubic-bezier(0.22, 1, 0.36, 1)",
+              }}
+            >
+              And one last thing, Gheli...
+            </p>
+
+            {/* Beat 2: You don't have to remember every little thing in here. */}
+            {finalMessageStep >= 2 && (
+              <p
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontSize: "clamp(0.96rem, 2.5vw, 1.25rem)",
+                  color: "rgba(255, 242, 228, 0.88)",
+                  textShadow: "0 2px 16px rgba(0, 0, 0, 0.95)",
+                  lineHeight: 1.45,
+                  margin: 0,
+                  opacity: 1,
+                  animation: "galaxyTextFade 1.3s ease forwards",
+                }}
+              >
+                You don&apos;t have to remember every little thing in here.
+              </p>
+            )}
+
+            {/* Beat 3: Just remember that, somewhere, someone thought you were worth making an entire universe for. */}
+            {finalMessageStep >= 3 && (
+              <p
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontSize: "clamp(0.96rem, 2.5vw, 1.28rem)",
+                  color: "#F5CE86",
+                  textShadow: "0 0 20px rgba(233, 199, 125, 0.28), 0 2px 16px rgba(0, 0, 0, 0.95)",
+                  lineHeight: 1.48,
+                  margin: 0,
+                  opacity: 1,
+                  animation: "galaxyTextFade 1.4s ease forwards",
+                }}
+              >
+                Just remember that, somewhere, someone thought you were worth making an entire universe for.
+              </p>
+            )}
+
+            {/* Beat 4: And I hope, whenever you look up at the stars, one of them makes you smile. */}
+            {finalMessageStep >= 4 && (
+              <p
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontStyle: "italic",
+                  fontSize: "clamp(0.98rem, 2.6vw, 1.3rem)",
+                  color: "rgba(224, 186, 212, 0.94)",
+                  textShadow: "0 2px 16px rgba(0, 0, 0, 0.95)",
+                  lineHeight: 1.46,
+                  marginTop: "0.2rem",
+                  marginBottom: 0,
+                  opacity: 1,
+                  animation: "galaxyTextFade 1.4s ease forwards",
+                }}
+              >
+                And I hope, whenever you look up at the stars, one of them makes you smile.
+              </p>
+            )}
+
+            {/* Beat 5: Signature */}
+            {finalMessageStep >= 5 && (
+              <div
+                style={{
+                  marginTop: "0.35rem",
+                  opacity: 1,
+                  animation: "galaxyTextFade 1.5s ease forwards",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "var(--font-serif)",
+                    fontStyle: "italic",
+                    fontSize: "clamp(1.15rem, 3.2vw, 1.55rem)",
+                    letterSpacing: "0.08em",
+                    color: "rgba(245, 206, 134, 0.92)",
+                    textShadow: "0 0 16px rgba(233, 199, 125, 0.35)",
+                  }}
+                >
+                  — Umar
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Galaxy Controls */}
@@ -817,6 +965,8 @@ export function MemoryGalaxyScene() {
           alignItems: "center",
           gap: "0.65rem",
           zIndex: 30,
+          opacity: finalMessageStep >= 1 ? 0.72 : 1,
+          transition: "opacity 1.2s ease",
         }}
       >
         <button
@@ -896,6 +1046,16 @@ export function MemoryGalaxyScene() {
       )}
 
       <style jsx>{`
+        @keyframes galaxyTextFade {
+          from {
+            opacity: 0;
+            transform: translateY(6px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
       `}</style>
     </section>
   );

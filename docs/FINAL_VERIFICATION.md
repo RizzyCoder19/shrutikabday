@@ -88,3 +88,17 @@
 - **Live Production Server**: Built and running locally on `http://localhost:3000`.
 - **Headless Chrome CDP Inspection**: Completed visual screenshot capture and interactive DOM telemetry across `360×800`, `390×844`, `430×932`, and `1440×900` (`48/48` viewport matrix + `13/13` sequential `01→12→01` progression, `CONSOLE_ERRORS: []`).
 - **Remaining Limitations**: Audio output playback (`lut-gaye.mp3` & Web Audio API chimes) runs inside headless Chrome telemetry without audible speaker output in CI/headless mode; manual browser check with sound enabled at `http://localhost:3000` can confirm subjective audio levels.
+
+---
+
+## Version 5.0 Verification: Audio Handoff & Galaxy Ending
+
+### Automated Build & Static Analysis
+- **TypeScript**: `npx tsc --noEmit` -> 0 errors.
+- **ESLint**: `npm run lint` -> 0 errors.
+- **Next.js Production Build**: `npm run build` -> Exit code 0 (`✓ Compiled successfully in 13.5s`, `/` 88.4 kB, First Load JS 192 kB).
+- **Headless QA Runner**: `scratch/qa-v50-audio.mjs` ran against production server (`task-2802`).
+  - Chapter 11 HUD: `11/12•Let's Wrap This UpSound On`, button visible.
+  - Chapter 12 Transition: `12/12•Memory GalaxySound On`, aria `Chapter 12: The Memory Galaxy`.
+  - Console Errors: `0`.
+  - Multi-track handoff verified without race conditions.

@@ -123,9 +123,10 @@ export function WrapUpScene() {
 
   const handleLaunchGalaxy = () => {
     if (warping) return;
+    // Directly initiate ending track playback inside user click event to satisfy browser autoplay policies
+    musicCueManager.startEndingTrack(soundEnabled);
     if (soundEnabled) {
       audioSynth.playCelestialChimes();
-      musicCueManager.swellVolume(0.86, 850);
     }
     setWarping(true);
     if (rootRef.current) {

@@ -14,13 +14,17 @@ export interface SceneAudioCue {
 }
 
 const MAIN_TRACK = "/audio/lut-gaye.mp3";
+export const ENDING_TRACK = "/audio/ha tu hai.m4a";
 
 /**
  * Continuous Soundtrack Cue Map (following `bhadwikabday` SoundtrackDirector architecture):
- * - `/audio/lut-gaye.mp3` plays as ONE single continuous unbroken stream from 0:00
- *   starting when the user begins the experience.
- * - Scene changes NEVER seek, cut, or restart the track (only explicit Replay resets to 0:00).
- * - Text-heavy/intimate chapters smoothly duck volume; visual/celebration chapters swell cleanly.
+ * - `/audio/lut-gaye.mp3` plays as ONE continuous unbroken stream from 0:00
+ *   starting when the user begins the experience (Chapters 01–10).
+ * - Chapter 11 (`WRAP_UP`): Immediately fades the first song to zero within ~1.5s,
+ *   leaving Chapter 11 in genuine silence.
+ * - On clicking "LET'S WRAP THIS UP": Ending track (`ha tu hai.m4a`) starts cleanly from 0:00
+ *   at full volume (1.0) and carries across Chapter 12 (`MEMORY_GALAXY`).
+ * - Only explicit Replay resets both tracks.
  */
 export const SCENE_AUDIO_CUES: Record<ExperienceScene, SceneAudioCue> = {
   BLACK_INTRO: {
@@ -94,17 +98,17 @@ export const SCENE_AUDIO_CUES: Record<ExperienceScene, SceneAudioCue> = {
     duckAudio: true,
   },
   WRAP_UP: {
-    mood: "Rebuilding anticipation into galaxy warp",
-    trackSrc: MAIN_TRACK,
-    volume: 0.72,
-    fadeMs: 800,
+    mood: "Fade primary track to absolute silence within ~1.5s; silence in wrap up",
+    trackSrc: null,
+    volume: 0,
+    fadeMs: 1500,
     duckAudio: false,
   },
   MEMORY_GALAXY: {
-    mood: "Full soaring soundtrack finale across the 3-arm spiral galaxy",
-    trackSrc: MAIN_TRACK,
-    volume: 0.88,
-    fadeMs: 900,
+    mood: "Ending soundtrack finale ('Ha Tu Hai') plays at full volume",
+    trackSrc: ENDING_TRACK,
+    volume: 1.0,
+    fadeMs: 250,
     duckAudio: false,
   },
 };
