@@ -1,0 +1,149 @@
+/* Chapter 06 — Full-Screen Glowing Flower Universe & Interstitial */
+.fg-root {
+  position: fixed;
+  inset: 0;
+  background-color: #020206;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* -------------------------------------------------------------
+   INTERSTITIAL: A Universe of Undying Flowers (Dark -> First Light)
+   ------------------------------------------------------------- */
+.fg-interstitial {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: radial-gradient(circle at 50% 62%, rgba(20, 6, 14, 0.85) 0%, #020206 72%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: max(4.2rem, calc(var(--safe-top) + 3.2rem)) max(1.25rem, var(--safe-right))
+    max(2.2rem, calc(var(--safe-bottom) + 1.2rem)) max(1.25rem, var(--safe-left));
+  text-align: center;
+}
+
+.fg-interstitial-dawn {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 85% 42% at 50% 82%,
+    rgba(194, 24, 68, 0.28) 0%,
+    rgba(233, 199, 125, 0.16) 36%,
+    transparent 74%
+  );
+  opacity: 0;
+}
+
+.fg-interstitial-botanical {
+  position: relative;
+  width: clamp(118px, 28vw, 200px);
+  height: clamp(134px, 24vh, 210px);
+  margin: 0 auto 1.1rem;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.fg-interstitial-lines {
+  position: relative;
+  z-index: 4;
+  width: 100%;
+  max-width: min(92vw, 34rem);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.55rem;
+}
+
+.fg-interstitial-line {
+  font-family: var(--font-serif);
+  font-size: clamp(1.16rem, 3.1vw, 1.75rem);
+  font-weight: 300;
+  line-height: 1.38;
+  text-wrap: balance;
+  color: rgba(255, 242, 228, 0.92);
+  letter-spacing: 0.015em;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+}
+
+.fg-interstitial-line--accent {
+  font-style: italic;
+  font-size: clamp(1.38rem, 3.2vw, 2.15rem);
+  color: #f3d9c9;
+}
+
+.fg-interstitial-line--final {
+  font-style: italic;
+  font-size: clamp(1.42rem, 3.3vw, 2.2rem);
+  color: #e9c77d;
+  text-shadow: 0 0 24px rgba(233, 199, 125, 0.28), 0 2px 16px rgba(0, 0, 0, 0.9);
+}
+
+/* -------------------------------------------------------------
+   FULL-SCREEN 60FPS GPU-COMPOSED FLOWER UNIVERSE CANVAS
+   ------------------------------------------------------------- */
+.fg-garden-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 10;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.fg-sky-narrative {
+  position: fixed;
+  top: max(4.3rem, calc(var(--safe-top) + 3.4rem));
+  left: 0;
+  right: 0;
+  z-index: 35;
+  text-align: center;
+  padding: 0 1.4rem;
+  pointer-events: none;
+}
+
+.fg-sky-line1 {
+  font-family: var(--font-serif);
+  font-size: clamp(1.3rem, 2.8vw, 2.05rem);
+  font-weight: 300;
+  color: rgba(255, 242, 228, 0.94);
+  text-shadow: 0 2px 22px rgba(0, 0, 0, 0.92), 0 0 26px rgba(20, 8, 22, 0.85);
+  opacity: 0;
+}
+
+.fg-sky-line2 {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(1.55rem, 3.4vw, 2.48rem);
+  font-weight: 400;
+  color: #f5dccb;
+  margin-top: 0.25rem;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.94), 0 0 24px rgba(255, 77, 109, 0.22);
+  opacity: 0;
+}
+
+.fg-sky-whisper {
+  font-size: clamp(0.76rem, 1.3vw, 0.9rem);
+  color: rgba(233, 199, 125, 0.84);
+  letter-spacing: 0.08em;
+  margin-top: 0.5rem;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.95);
+  opacity: 0;
+}
+
+.fg-exit-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 48;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 45%, #19142c 0%, #0b0a16 62%, #040409 100%);
+  opacity: 0;
+}

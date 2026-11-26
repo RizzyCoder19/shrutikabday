@@ -1,0 +1,264 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Dancing+Script:wght@500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=Great+Vibes&family=Outfit:wght@200;300;400;500;600&family=Space+Mono&display=swap');
+
+:root {
+  color-scheme: dark;
+
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-handwriting: 'Great Vibes', cursive;
+  --font-letter-script: 'Dancing Script', 'Great Vibes', cursive;
+  --font-letter-hand: 'Caveat', 'Cormorant Garamond', cursive;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-mono: 'Space Mono', monospace;
+
+  --color-deep-plum: #17172C;
+  --color-plum-dark: #0A0914;
+  --color-muted-lavender: #7770A8;
+  --color-dusty-rose: #D9A6B7;
+  --color-warm-peach: #F3D9C9;
+  --color-soft-ivory: #FFF2E4;
+  --color-champagne-gold: #E9C77D;
+
+  --bg-primary: var(--color-deep-plum);
+  --text-primary: var(--color-soft-ivory);
+  --text-muted: rgba(255, 242, 228, 0.7);
+  --border-gold: rgba(233, 199, 125, 0.35);
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  background-color: #000000;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button {
+  font-family: inherit;
+}
+
+.film-grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99;
+  opacity: 0.03;
+  background-image: url('/textures/grain.png');
+  background-repeat: repeat;
+  mix-blend-mode: overlay;
+}
+
+.experience-stage {
+  position: relative;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.ambient-hud {
+  position: fixed;
+  top: max(1rem, var(--safe-top));
+  left: 0;
+  right: 0;
+  z-index: 70;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 max(1.2rem, var(--safe-right)) 0 max(1.2rem, var(--safe-left));
+  pointer-events: none;
+  gap: 0.5rem;
+}
+
+.ambient-hud>* {
+  pointer-events: auto;
+}
+
+.hud-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(14, 13, 28, 0.58);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(233, 199, 125, 0.28);
+  border-radius: 9999px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+  color: var(--color-champagne-gold);
+}
+
+.hud-dots {
+  display: flex;
+  gap: 3px;
+  margin-left: 6px;
+}
+
+.hud-btn {
+  background: rgba(14, 13, 28, 0.58);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(233, 199, 125, 0.28);
+  border-radius: 9999px;
+  padding: 0.38rem 0.85rem;
+  color: var(--color-soft-ivory);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.74rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.hud-btn:hover {
+  background: rgba(119, 112, 168, 0.3);
+  border-color: var(--color-champagne-gold);
+  color: var(--color-champagne-gold);
+}
+
+.btn-cinematic {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.75rem 1.75rem;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-soft-ivory);
+  background: rgba(23, 23, 44, 0.6);
+  border: 1px solid rgba(233, 199, 125, 0.45);
+  border-radius: 9999px;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-cinematic:hover {
+  background: rgba(119, 112, 168, 0.35);
+  border-color: var(--color-champagne-gold);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.scene-continue-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.45rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(233, 199, 125, 0.4);
+  background: rgba(15, 14, 29, 0.62);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--color-soft-ivory);
+  font-size: 0.76rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.scene-continue-btn:hover {
+  border-color: var(--color-champagne-gold);
+  color: var(--color-champagne-gold);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 600px) {
+  .ambient-hud {
+    padding: 0 max(0.75rem, var(--safe-right)) 0 max(0.75rem, var(--safe-left));
+  }
+
+  .hud-pill {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.7rem;
+  }
+
+  .hud-btn {
+    min-height: 38px;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.74rem;
+  }
+
+  .scene-continue-btn,
+  .btn-cinematic {
+    min-height: 42px;
+    padding: 0.7rem 1.35rem;
+  }
+
+  .hud-dots {
+    display: none;
+  }
+
+  .hud-scene-title {
+    max-width: 122px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .experience-stage[data-scene="INSTAGRAM_ARCHIVE"] .ambient-hud {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+@keyframes introReadyPulse {
+
+  0%,
+  100% {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7), inset 0 0 12px rgba(233, 199, 125, 0.1);
+    border-color: rgba(233, 199, 125, 0.45);
+  }
+
+  50% {
+    box-shadow: 0 0 30px rgba(233, 199, 125, 0.35), inset 0 0 18px rgba(233, 199, 125, 0.22);
+    border-color: rgba(233, 199, 125, 0.85);
+  }
+}
+
+.intro-ready-pulse {
+  animation: introReadyPulse 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

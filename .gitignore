@@ -1,0 +1,34 @@
+# Node
+node_modules/
+.next/
+.env
+.env.local
+.env.production
+
+# Build artifacts
+*.tsbuildinfo
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.suo
+*.user
+
+# Private assets (not shared)
+public/images/shruti/
+public/images/chats/
+public/audio/
+
+# Scratch / QA artifacts
+brain/
+pictures/
+chats/
+music/
+Aaki-ka-weird-tohfa-main/
+Casa-Tanvi-main/
+bhadwikabday-main/
+Galaxy-main/
