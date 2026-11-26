@@ -121,8 +121,6 @@ npm run start
 # ... etc.
 ```
 
-> **Note:** This project was built for one specific person and her private photographs. The `public/images/` folder is not included in this repository for privacy.
-
 ---
 
 ## 🔗 All Scene Links (Local Dev)

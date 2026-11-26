@@ -18,17 +18,12 @@ Thumbs.db
 *.suo
 *.user
 
-# Private assets (not shared)
-public/images/shruti/
-public/images/chats/
-public/audio/
-
-# Scratch / QA artifacts
-brain/
-pictures/
-chats/
-music/
-Aaki-ka-weird-tohfa-main/
-Casa-Tanvi-main/
-bhadwikabday-main/
-Galaxy-main/
+# Root scratch / External reference clones (not project source)
+/brain/
+/pictures/
+/chats/
+/music/
+/Aaki-ka-weird-tohfa-main/
+/Casa-Tanvi-main/
+/bhadwikabday-main/
+/Galaxy-main/
