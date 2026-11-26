@@ -99,44 +99,6 @@ export function MemoryGalaxyScene() {
   const [webglError, setWebglError] = useState(false);
   const [selectedSrc, setSelectedSrc] = useState<string | null>(null);
   const [modalImgReady, setModalImgReady] = useState(false);
-  const [showTiltHint, setShowTiltHint] = useState(false);
-  const tiltDismissedRef = useRef(false);
-
-  const dismissTiltHint = useCallback(() => {
-    if (tiltDismissedRef.current) return;
-    tiltDismissedRef.current = true;
-    setShowTiltHint(false);
-  }, []);
-
-  useEffect(() => {
-    const isPortraitMobile = window.innerWidth < 768 && window.innerHeight >= window.innerWidth;
-    if (!isPortraitMobile) return;
-
-    const showTimer = setTimeout(() => {
-      if (!tiltDismissedRef.current && window.innerWidth < 768 && window.innerHeight >= window.innerWidth) {
-        setShowTiltHint(true);
-      }
-    }, 1500);
-
-    const hideTimer = setTimeout(() => {
-      dismissTiltHint();
-    }, 10000);
-
-    const onOrientationOrResize = () => {
-      if (window.innerWidth > window.innerHeight || window.innerWidth >= 768) {
-        dismissTiltHint();
-      }
-    };
-
-    window.addEventListener("resize", onOrientationOrResize);
-    window.addEventListener("orientationchange", onOrientationOrResize);
-    return () => {
-      clearTimeout(showTimer);
-      clearTimeout(hideTimer);
-      window.removeEventListener("resize", onOrientationOrResize);
-      window.removeEventListener("orientationchange", onOrientationOrResize);
-    };
-  }, [dismissTiltHint]);
 
   const closeSelectedMemory = useCallback(() => {
     setSelectedSrc(null);
@@ -188,7 +150,7 @@ export function MemoryGalaxyScene() {
     const introStartPos = new THREE.Vector3(0.45, 0.34, 0.48);
     const isPortrait = sizes.width / sizes.height < 0.85;
     const overviewCamPos = isPortrait
-      ? new THREE.Vector3(3.35, 3.1, 3.35)
+      ? new THREE.Vector3(3.1, 2.9, 3.1)
       : new THREE.Vector3(2.85, 2.55, 2.85);
     camera.position.copy(reducedMotion ? overviewCamPos : introStartPos);
     scene.add(camera);
@@ -212,19 +174,19 @@ export function MemoryGalaxyScene() {
     controls.addEventListener("start", onControlStart);
     controls.addEventListener("end", onControlEnd);
 
-    // 1. Galaxy-main spiral math: structured 3-arm spiral galaxy with natural density & depth
+    // 1. Structured organic 3-arm spiral galaxy matching true cosmic physics
     const params = {
-      count: isMobile ? 18000 : 30000,
-      size: isMobile ? 0.034 : 0.026,
-      radius: 2.55,
+      count: isMobile ? 32000 : 54000,
+      size: isMobile ? 0.024 : 0.018,
+      radius: 2.7,
       branches: 3,
-      spin: 3.35,
-      randomness: 1.58,
-      randomnessPower: 3.45,
-      insideColor: "#FFF8EA",
-      midColor: "#F5CE86",
-      roseColor: "#E09AB2",
-      outsideColor: "#867EE0",
+      spin: 3.2,
+      randomness: 2.2,
+      randomnessPower: 3.8,
+      insideColor: "#FFF7EB",
+      midColor: "#F2C779",
+      roseColor: "#D188A6",
+      outsideColor: "#5B5299",
     };
 
     const starGlowTex = createStarGlowTexture();
@@ -239,46 +201,31 @@ export function MemoryGalaxyScene() {
 
     for (let i = 0; i < params.count; i++) {
       const i3 = i * 3;
-      const isOuterHaloStar = i % 9 === 0;
-      const r = Math.pow(Math.random(), isOuterHaloStar ? 1.1 : 1.42) * params.radius;
+      // Exponential distribution giving true galactic core clustering with trailing thin arms
+      const isOuterHaloStar = i % 8 === 0;
+      const r = isOuterHaloStar
+        ? Math.pow(Math.random(), 1.1) * params.radius * 1.15
+        : Math.pow(Math.random(), 2.1) * params.radius;
       const spinAngle = r * params.spin;
       const branchAngle = ((i % params.branches) / params.branches) * Math.PI * 2;
 
       const neg = () => (Math.random() < 0.5 ? 1 : -1);
-      const radialSpread = isOuterHaloStar
-        ? 0.28 + 0.18 * (r / params.radius)
-        : 0.1 + 0.21 * (1 - r / params.radius);
-      const rx =
-        Math.pow(Math.random(), params.randomnessPower) *
-        neg() *
-        params.randomness *
-        radialSpread;
-      const bulgeHeight = 0.036 + 0.17 * Math.exp(-r * 1.85);
-      const diskWarp = Math.sin(branchAngle * 2 + r * 1.8) * 0.022;
-      const ry =
-        Math.pow(Math.random(), params.randomnessPower) *
-        neg() *
-        params.randomness *
-        bulgeHeight +
-        diskWarp;
-      const rz =
-        Math.pow(Math.random(), params.randomnessPower) *
-        neg() *
-        params.randomness *
-        radialSpread;
+      const randomX = Math.pow(Math.random(), params.randomnessPower) * neg() * params.randomness * (0.35 + r * 0.25);
+      const randomY = Math.pow(Math.random(), params.randomnessPower) * neg() * (0.12 + Math.exp(-r * 2.2) * 0.45);
+      const randomZ = Math.pow(Math.random(), params.randomnessPower) * neg() * params.randomness * (0.35 + r * 0.25);
 
-      positions[i3] = Math.cos(branchAngle + spinAngle) * r + rx;
-      positions[i3 + 1] = ry;
-      positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * r + rz;
+      positions[i3] = Math.cos(branchAngle + spinAngle) * r + randomX;
+      positions[i3 + 1] = randomY;
+      positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * r + randomZ;
 
       const t = r / params.radius;
       const mixed = colorInside.clone();
-      if (t < 0.22) {
-        mixed.lerp(colorMid, t / 0.22);
-      } else if (t < 0.56) {
-        mixed.copy(colorMid).lerp(colorRose, (t - 0.22) / 0.34);
+      if (t < 0.2) {
+        mixed.lerp(colorMid, t / 0.2);
+      } else if (t < 0.55) {
+        mixed.copy(colorMid).lerp(colorRose, (t - 0.2) / 0.35);
       } else {
-        mixed.copy(colorRose).lerp(colorOutside, (t - 0.56) / 0.44);
+        mixed.copy(colorRose).lerp(colorOutside, Math.min(1, (t - 0.55) / 0.45));
       }
 
       colors[i3] = mixed.r;
@@ -295,7 +242,7 @@ export function MemoryGalaxyScene() {
       sizeAttenuation: true,
       depthWrite: false,
       transparent: true,
-      opacity: 0.98,
+      opacity: 0.96,
       blending: THREE.AdditiveBlending,
       vertexColors: true,
     });
@@ -303,20 +250,20 @@ export function MemoryGalaxyScene() {
     const starPoints = new THREE.Points(pointsGeo, pointsMat);
     scene.add(starPoints);
 
-    // Luminous warm core bulge
+    // Highly dense, luminous warm galactic core bulge
     const coreGeo = new THREE.BufferGeometry();
-    const coreCount = isMobile ? 480 : 920;
+    const coreCount = isMobile ? 1200 : 2400;
     const corePos = new Float32Array(coreCount * 3);
     const coreCol = new Float32Array(coreCount * 3);
     for (let i = 0; i < coreCount; i++) {
       const i3 = i * 3;
-      const rr = Math.pow(Math.random(), 2.0) * 0.62;
+      const rr = Math.pow(Math.random(), 2.8) * 0.68;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
       corePos[i3] = Math.sin(phi) * Math.cos(theta) * rr;
-      corePos[i3 + 1] = Math.cos(phi) * rr * 0.38;
+      corePos[i3 + 1] = Math.cos(phi) * rr * 0.42;
       corePos[i3 + 2] = Math.sin(phi) * Math.sin(theta) * rr;
-      const c = colorInside.clone().lerp(colorMid, Math.min(1, rr / 0.62));
+      const c = colorInside.clone().lerp(colorMid, Math.min(1, rr / 0.68));
       coreCol[i3] = c.r;
       coreCol[i3 + 1] = c.g;
       coreCol[i3 + 2] = c.b;
@@ -324,12 +271,12 @@ export function MemoryGalaxyScene() {
     coreGeo.setAttribute("position", new THREE.BufferAttribute(corePos, 3));
     coreGeo.setAttribute("color", new THREE.BufferAttribute(coreCol, 3));
     const coreMat = new THREE.PointsMaterial({
-      size: isMobile ? 0.088 : 0.076,
+      size: isMobile ? 0.058 : 0.046,
       map: starGlowTex,
       sizeAttenuation: true,
       depthWrite: false,
       transparent: true,
-      opacity: 0.52,
+      opacity: 0.65,
       blending: THREE.AdditiveBlending,
       vertexColors: true,
     });
@@ -358,9 +305,9 @@ export function MemoryGalaxyScene() {
     let isDisposed = false;
 
     const PLANET_RIMS = [
-      { core: "rgba(255, 245, 228, 0.96)", glow: "rgba(245, 214, 142, 0.58)", outer: "rgba(233, 199, 125, 0)" }, // Warm Champagne Glow
-      { core: "rgba(242, 234, 255, 0.95)", glow: "rgba(198, 180, 255, 0.54)", outer: "rgba(182, 164, 240, 0)" }, // Soft Lavender Glow
-      { core: "rgba(255, 232, 242, 0.95)", glow: "rgba(242, 168, 190, 0.56)", outer: "rgba(227, 154, 174, 0)" }, // Dusty Rose Glow
+      { core: "rgba(255, 248, 235, 1.0)", glow: "rgba(255, 224, 150, 0.75)", outer: "rgba(240, 200, 110, 0)" }, // Brilliant Champagne Gold
+      { core: "rgba(248, 240, 255, 1.0)", glow: "rgba(215, 195, 255, 0.72)", outer: "rgba(180, 160, 250, 0)" }, // Luminous Lavender
+      { core: "rgba(255, 240, 248, 1.0)", glow: "rgba(255, 185, 210, 0.72)", outer: "rgba(240, 160, 190, 0)" }, // Luminous Rose
     ] as const;
 
     const createCelestialPlanetTexture = (
@@ -376,7 +323,7 @@ export function MemoryGalaxyScene() {
             resolve(null);
             return;
           }
-          const dim = 192;
+          const dim = 256;
           const cv = document.createElement("canvas");
           cv.width = dim;
           cv.height = dim;
@@ -388,13 +335,13 @@ export function MemoryGalaxyScene() {
 
           const cx = dim / 2;
           const cy = dim / 2;
-          const sphereR = Math.floor(dim * 0.37);
+          const sphereR = Math.floor(dim * 0.40);
           const outerR = dim * 0.5;
 
           // Atmospheric outer planetary halo matching star glow softly
-          const halo = c.createRadialGradient(cx, cy, sphereR * 0.78, cx, cy, outerR);
+          const halo = c.createRadialGradient(cx, cy, sphereR * 0.85, cx, cy, outerR);
           halo.addColorStop(0, rimVariant.core);
-          halo.addColorStop(0.35, rimVariant.glow);
+          halo.addColorStop(0.38, rimVariant.glow);
           halo.addColorStop(1, rimVariant.outer);
           c.fillStyle = halo;
           c.beginPath();
@@ -421,7 +368,7 @@ export function MemoryGalaxyScene() {
           sc.drawImage(img, drawX, drawY, dw, dh);
           const srcData = sc.getImageData(0, 0, cropSize, cropSize).data;
 
-          // Gentle spherical projection (k=0.12) + limb darkening + top-left sunlight + Fresnel rim
+          // Gentle spherical projection + crisp photo clarity + vibrant rim light
           const sphereImg = c.createImageData(cropSize, cropSize);
           const out = sphereImg.data;
           const invR = 1 / sphereR;
@@ -439,7 +386,7 @@ export function MemoryGalaxyScene() {
               const r = Math.sqrt(r2);
               const nz = Math.sqrt(Math.max(0, 1 - r2));
 
-              const warp = 1 - 0.12 * (1 - nz);
+              const warp = 1 - 0.08 * (1 - nz);
               const sx = Math.min(
                 cropSize - 1,
                 Math.max(0, Math.round((nx * warp + 1) * 0.5 * (cropSize - 1)))
@@ -450,22 +397,22 @@ export function MemoryGalaxyScene() {
               );
               const srcIdx = (sy * cropSize + sx) * 4;
 
-              // Lambert directional + limb darkening + subtle specular rim
-              const lightDot = Math.max(0, nx * -0.35 + ny * -0.38 + nz * 0.85);
-              const limb = 0.54 + 0.46 * Math.pow(nz, 0.55) * (0.72 + 0.36 * lightDot);
-              const fresnel = Math.pow(1 - nz, 2.7) * 0.65;
+              // High photo vibrancy & clarity + glowing rim
+              const lightDot = Math.max(0, nx * -0.25 + ny * -0.3 + nz * 0.9);
+              const limb = 0.72 + 0.28 * Math.pow(nz, 0.4) * (0.8 + 0.25 * lightDot);
+              const fresnel = Math.pow(1 - nz, 2.4) * 0.75;
 
               out[outIdx] = Math.min(255, Math.round(srcData[srcIdx] * limb + 255 * fresnel));
               out[outIdx + 1] = Math.min(
                 255,
-                Math.round(srcData[srcIdx + 1] * limb + 236 * fresnel)
+                Math.round(srcData[srcIdx + 1] * limb + 242 * fresnel)
               );
               out[outIdx + 2] = Math.min(
                 255,
-                Math.round(srcData[srcIdx + 2] * limb + 218 * fresnel)
+                Math.round(srcData[srcIdx + 2] * limb + 225 * fresnel)
               );
-              // Feather outermost 1.5px edge smoothly into atmospheric glow
-              const edgeAlpha = r > 0.94 ? Math.max(0, (1 - r) / 0.06) : 1;
+              // Clean spherical edge feather
+              const edgeAlpha = r > 0.95 ? Math.max(0, (1 - r) / 0.05) : 1;
               out[outIdx + 3] = Math.round(255 * edgeAlpha);
             }
           }
@@ -479,14 +426,15 @@ export function MemoryGalaxyScene() {
 
           // Delicate top-left celestial crescent reflection
           const spec = c.createRadialGradient(
-            cx - sphereR * 0.38,
+            cx - sphereR * 0.35,
             cy - sphereR * 0.38,
             0,
-            cx - sphereR * 0.38,
+            cx - sphereR * 0.35,
             cy - sphereR * 0.38,
-            sphereR * 0.72
+            sphereR * 0.85
           );
-          spec.addColorStop(0, "rgba(255, 252, 245, 0.24)");
+          spec.addColorStop(0, "rgba(255, 255, 255, 0.42)");
+          spec.addColorStop(0.35, "rgba(255, 250, 240, 0.18)");
           spec.addColorStop(1, "rgba(255, 252, 245, 0)");
           c.fillStyle = spec;
           c.beginPath();
@@ -556,15 +504,15 @@ export function MemoryGalaxyScene() {
           Math.sin(branchAngle + spinAngle) * r + scatterZ
         );
 
-        // Tiered planetary sizes & brightness feel like depth across the spiral disk
-        const isHeroPlanet = i % 7 === 0;
+        // Tiered planetary sizes: prominent and radiant so photos are the pure focal point
+        const isHeroPlanet = i % 5 === 0;
         const baseScale = isMobile
           ? isHeroPlanet
-            ? 0.088 + Math.random() * 0.024
-            : 0.048 + Math.random() * 0.028
+            ? 0.135 + Math.random() * 0.035
+            : 0.082 + Math.random() * 0.038
           : isHeroPlanet
-            ? 0.08 + Math.random() * 0.024
-            : 0.044 + Math.random() * 0.026;
+            ? 0.125 + Math.random() * 0.035
+            : 0.075 + Math.random() * 0.032;
         sprite.scale.set(baseScale, baseScale, 1);
         sprite.userData = { src: entry.item.src };
 
@@ -818,41 +766,8 @@ export function MemoryGalaxyScene() {
     >
       <canvas
         ref={canvasRef}
-        onPointerDown={dismissTiltHint}
         style={{ display: "block", width: "100%", height: "100%", touchAction: "none" }}
       />
-
-      {/* Mobile-Only Portrait Orientation Guidance (non-blocking cosmic tilt prompt) */}
-      {showTiltHint && !selectedSrc && (
-        <div
-          className="galaxy-tilt-wrap"
-          role="status"
-          aria-live="polite"
-        >
-          <div className="galaxy-tilt-card" onClick={dismissTiltHint}>
-            <div className="galaxy-tilt-phone" aria-hidden="true">
-              <svg width="34" height="52" viewBox="0 0 34 52" fill="none">
-                <rect
-                  x="2"
-                  y="2"
-                  width="30"
-                  height="48"
-                  rx="6"
-                  stroke="#E9C77D"
-                  strokeWidth="1.5"
-                  fill="rgba(22, 16, 38, 0.72)"
-                />
-                <line x1="12" y1="6.5" x2="22" y2="6.5" stroke="rgba(255,242,228,0.5)" strokeWidth="1.2" strokeLinecap="round" />
-                <circle cx="17" cy="26" r="3" fill="rgba(233, 199, 125, 0.55)" />
-                <circle cx="17" cy="26" r="7" stroke="rgba(217, 166, 183, 0.35)" strokeWidth="0.9" strokeDasharray="2 2" />
-                <line x1="13" y1="45" x2="21" y2="45" stroke="rgba(255,242,228,0.45)" strokeWidth="1.2" strokeLinecap="round" />
-              </svg>
-            </div>
-            <p className="galaxy-tilt-title">Tilt your phone.</p>
-            <p className="galaxy-tilt-sub">There&apos;s more to see this way.</p>
-          </div>
-        </div>
-      )}
 
       {/* Poetic Caption Overlay */}
       <div
@@ -981,81 +896,6 @@ export function MemoryGalaxyScene() {
       )}
 
       <style jsx>{`
-        .galaxy-tilt-wrap {
-          position: fixed;
-          top: max(4.6rem, calc(var(--safe-top) + 3.9rem));
-          left: 0;
-          right: 0;
-          display: flex;
-          justify-content: center;
-          padding-inline: 1.25rem;
-          pointer-events: none;
-          z-index: 28;
-          animation: galaxyTiltFadeIn 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-        }
-
-        .galaxy-tilt-card {
-          pointer-events: auto;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          gap: 0.35rem;
-          padding: 0.9rem 1.45rem 0.95rem;
-          border-radius: 22px;
-          background: radial-gradient(ellipse at center, rgba(22, 16, 40, 0.68) 0%, rgba(8, 7, 18, 0.48) 100%);
-          border: 1px solid rgba(233, 199, 125, 0.24);
-          box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55), 0 0 28px rgba(233, 199, 125, 0.12);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-          cursor: pointer;
-        }
-
-        .galaxy-tilt-phone {
-          margin-bottom: 0.2rem;
-          filter: drop-shadow(0 0 12px rgba(233, 199, 125, 0.35));
-          transform-origin: center center;
-          animation: galaxyPhoneTilt 4.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-        }
-
-        .galaxy-tilt-title {
-          font-family: var(--font-serif);
-          font-style: italic;
-          font-size: clamp(1.5rem, 6vw, 1.95rem);
-          font-weight: 400;
-          line-height: 1.15;
-          color: #FFF4E6;
-          text-shadow: 0 0 22px rgba(233, 199, 125, 0.45), 0 2px 12px rgba(0, 0, 0, 0.9);
-        }
-
-        .galaxy-tilt-sub {
-          font-size: 0.78rem;
-          letter-spacing: 0.08em;
-          color: rgba(236, 224, 245, 0.78);
-        }
-
-        @keyframes galaxyTiltFadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes galaxyPhoneTilt {
-          0%, 14% {
-            transform: rotate(0deg);
-          }
-          34%, 58% {
-            transform: rotate(-76deg);
-          }
-          78%, 100% {
-            transform: rotate(0deg);
-          }
-        }
       `}</style>
     </section>
   );
