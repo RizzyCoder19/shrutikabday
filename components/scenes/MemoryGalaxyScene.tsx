@@ -75,8 +75,9 @@ function createStarGlowTexture(): THREE.CanvasTexture {
   const c = cv.getContext("2d")!;
   const grad = c.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
   grad.addColorStop(0, "rgba(255, 255, 255, 1)");
-  grad.addColorStop(0.22, "rgba(255, 248, 236, 0.85)");
-  grad.addColorStop(0.5, "rgba(233, 199, 125, 0.28)");
+  grad.addColorStop(0.18, "rgba(255, 250, 240, 0.95)");
+  grad.addColorStop(0.38, "rgba(245, 218, 160, 0.65)");
+  grad.addColorStop(0.68, "rgba(215, 175, 220, 0.28)");
   grad.addColorStop(1, "rgba(0, 0, 0, 0)");
   c.fillStyle = grad;
   c.fillRect(0, 0, size, size);
@@ -98,44 +99,33 @@ export function MemoryGalaxyScene() {
   const [webglError, setWebglError] = useState(false);
   const [selectedSrc, setSelectedSrc] = useState<string | null>(null);
   const [modalImgReady, setModalImgReady] = useState(false);
-  const [showTiltHint, setShowTiltHint] = useState(false);
-  const tiltDismissedRef = useRef(false);
+  const [orientationAccepted, setOrientationAccepted] = useState(false);
 
-  const dismissTiltHint = useCallback(() => {
-    if (tiltDismissedRef.current) return;
-    tiltDismissedRef.current = true;
-    setShowTiltHint(false);
-  }, []);
-
+  // Check if user is on portrait mobile initially
   useEffect(() => {
     const isPortraitMobile = window.innerWidth < 768 && window.innerHeight >= window.innerWidth;
-    if (!isPortraitMobile) return;
+    if (!isPortraitMobile) {
+      setOrientationAccepted(true);
+      return;
+    }
 
-    const showTimer = setTimeout(() => {
-      if (!tiltDismissedRef.current && window.innerWidth < 768 && window.innerHeight >= window.innerWidth) {
-        setShowTiltHint(true);
-      }
-    }, 1500);
-
-    const hideTimer = setTimeout(() => {
-      dismissTiltHint();
-    }, 10000);
-
-    const onOrientationOrResize = () => {
+    const checkOrientation = () => {
       if (window.innerWidth > window.innerHeight || window.innerWidth >= 768) {
-        dismissTiltHint();
+        setOrientationAccepted(true);
       }
     };
 
-    window.addEventListener("resize", onOrientationOrResize);
-    window.addEventListener("orientationchange", onOrientationOrResize);
+    window.addEventListener("resize", checkOrientation);
+    window.addEventListener("orientationchange", checkOrientation);
     return () => {
-      clearTimeout(showTimer);
-      clearTimeout(hideTimer);
-      window.removeEventListener("resize", onOrientationOrResize);
-      window.removeEventListener("orientationchange", onOrientationOrResize);
+      window.removeEventListener("resize", checkOrientation);
+      window.removeEventListener("orientationchange", checkOrientation);
     };
-  }, [dismissTiltHint]);
+  }, []);
+
+  const handleEnterGalaxy = useCallback(() => {
+    setOrientationAccepted(true);
+  }, []);
 
   const closeSelectedMemory = useCallback(() => {
     setSelectedSrc(null);
@@ -186,8 +176,9 @@ export function MemoryGalaxyScene() {
     const camera = new THREE.PerspectiveCamera(72, sizes.width / sizes.height, 0.03, 90);
     const introStartPos = new THREE.Vector3(0.45, 0.34, 0.48);
     const isPortrait = sizes.width / sizes.height < 0.85;
+    // On portrait mobile, tilt the galaxy dynamically across the diagonal with steeper pitch/elevation
     const overviewCamPos = isPortrait
-      ? new THREE.Vector3(3.35, 3.1, 3.35)
+      ? new THREE.Vector3(2.35, 3.65, 2.75)
       : new THREE.Vector3(2.85, 2.55, 2.85);
     camera.position.copy(reducedMotion ? overviewCamPos : introStartPos);
     scene.add(camera);
@@ -213,17 +204,17 @@ export function MemoryGalaxyScene() {
 
     // 1. Galaxy-main spiral math: structured 3-arm spiral galaxy with natural density & depth
     const params = {
-      count: isMobile ? 16000 : 28000,
-      size: isMobile ? 0.0185 : 0.0155,
+      count: isMobile ? 18000 : 30000,
+      size: isMobile ? 0.034 : 0.026,
       radius: 2.55,
       branches: 3,
       spin: 3.35,
       randomness: 1.58,
       randomnessPower: 3.45,
-      insideColor: "#FFF4E2",
-      midColor: "#E5C17B",
-      roseColor: "#C98FA4",
-      outsideColor: "#585694",
+      insideColor: "#FFF8EA",
+      midColor: "#F5CE86",
+      roseColor: "#E09AB2",
+      outsideColor: "#867EE0",
     };
 
     const starGlowTex = createStarGlowTexture();
@@ -294,7 +285,7 @@ export function MemoryGalaxyScene() {
       sizeAttenuation: true,
       depthWrite: false,
       transparent: true,
-      opacity: 0.94,
+      opacity: 0.98,
       blending: THREE.AdditiveBlending,
       vertexColors: true,
     });
@@ -302,20 +293,26 @@ export function MemoryGalaxyScene() {
     const starPoints = new THREE.Points(pointsGeo, pointsMat);
     scene.add(starPoints);
 
-    // Subtle luminous warm core bulge (balanced without washing out inner arm roots)
+    // Apply an authentic cinematic tilt to the galaxy disk on mobile portrait screens
+    if (isPortrait) {
+      starPoints.rotation.z = 0.22;
+      starPoints.rotation.x = 0.12;
+    }
+
+    // Highly luminous warm core bulge creating a radiant galactic nucleus
     const coreGeo = new THREE.BufferGeometry();
-    const coreCount = isMobile ? 380 : 760;
+    const coreCount = isMobile ? 480 : 920;
     const corePos = new Float32Array(coreCount * 3);
     const coreCol = new Float32Array(coreCount * 3);
     for (let i = 0; i < coreCount; i++) {
       const i3 = i * 3;
-      const rr = Math.pow(Math.random(), 2.2) * 0.58;
+      const rr = Math.pow(Math.random(), 2.0) * 0.62;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
       corePos[i3] = Math.sin(phi) * Math.cos(theta) * rr;
-      corePos[i3 + 1] = Math.cos(phi) * rr * 0.34;
+      corePos[i3 + 1] = Math.cos(phi) * rr * 0.38;
       corePos[i3 + 2] = Math.sin(phi) * Math.sin(theta) * rr;
-      const c = colorInside.clone().lerp(colorMid, Math.min(1, rr / 0.58));
+      const c = colorInside.clone().lerp(colorMid, Math.min(1, rr / 0.62));
       coreCol[i3] = c.r;
       coreCol[i3 + 1] = c.g;
       coreCol[i3 + 2] = c.b;
@@ -323,23 +320,31 @@ export function MemoryGalaxyScene() {
     coreGeo.setAttribute("position", new THREE.BufferAttribute(corePos, 3));
     coreGeo.setAttribute("color", new THREE.BufferAttribute(coreCol, 3));
     const coreMat = new THREE.PointsMaterial({
-      size: isMobile ? 0.064 : 0.054,
+      size: isMobile ? 0.088 : 0.076,
       map: starGlowTex,
       sizeAttenuation: true,
       depthWrite: false,
       transparent: true,
-      opacity: 0.24,
+      opacity: 0.52,
       blending: THREE.AdditiveBlending,
       vertexColors: true,
     });
     const corePoints = new THREE.Points(coreGeo, coreMat);
     scene.add(corePoints);
+    if (isPortrait) {
+      corePoints.rotation.z = 0.22;
+      corePoints.rotation.x = 0.12;
+    }
 
     // 2. Luminous miniature celestial photo planets embedded across all 3 spiral arms
     // Each planet uses spherical curvature projection, limb darkening, atmospheric Fresnel rim lighting,
     // and champagne/ivory/lavender/rose cosmic corona matching surrounding stars.
     const spritesGroup = new THREE.Group();
     scene.add(spritesGroup);
+    if (isPortrait) {
+      spritesGroup.rotation.z = 0.22;
+      spritesGroup.rotation.x = 0.12;
+    }
 
     const createdTextures: THREE.Texture[] = [];
     const createdMaterials: THREE.SpriteMaterial[] = [];
@@ -357,9 +362,9 @@ export function MemoryGalaxyScene() {
     let isDisposed = false;
 
     const PLANET_RIMS = [
-      { core: "rgba(255, 241, 220, 0.92)", glow: "rgba(233, 199, 125, 0.38)", outer: "rgba(233, 199, 125, 0)" }, // Warm Champagne
-      { core: "rgba(236, 226, 255, 0.9)", glow: "rgba(182, 164, 240, 0.36)", outer: "rgba(182, 164, 240, 0)" }, // Soft Lavender
-      { core: "rgba(255, 224, 234, 0.9)", glow: "rgba(227, 154, 174, 0.38)", outer: "rgba(227, 154, 174, 0)" }, // Dusty Rose
+      { core: "rgba(255, 245, 228, 0.96)", glow: "rgba(245, 214, 142, 0.58)", outer: "rgba(233, 199, 125, 0)" }, // Warm Champagne Glow
+      { core: "rgba(242, 234, 255, 0.95)", glow: "rgba(198, 180, 255, 0.54)", outer: "rgba(182, 164, 240, 0)" }, // Soft Lavender Glow
+      { core: "rgba(255, 232, 242, 0.95)", glow: "rgba(242, 168, 190, 0.56)", outer: "rgba(227, 154, 174, 0)" }, // Dusty Rose Glow
     ] as const;
 
     const createCelestialPlanetTexture = (
@@ -817,20 +822,26 @@ export function MemoryGalaxyScene() {
     >
       <canvas
         ref={canvasRef}
-        onPointerDown={dismissTiltHint}
-        style={{ display: "block", width: "100%", height: "100%", touchAction: "none" }}
+        style={{
+          display: "block",
+          width: "100%",
+          height: "100%",
+          touchAction: "none",
+          opacity: orientationAccepted ? 1 : 0,
+          transition: "opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1)",
+        }}
       />
 
-      {/* Mobile-Only Portrait Orientation Guidance (non-blocking cosmic tilt prompt) */}
-      {showTiltHint && !selectedSrc && (
+      {/* Pre-Galaxy Orientation Warning: black canvas with phone tilt prompt before galaxy appears */}
+      {!orientationAccepted && (
         <div
-          className="galaxy-tilt-wrap"
-          role="status"
-          aria-live="polite"
+          className="galaxy-pre-tilt-canvas"
+          role="dialog"
+          aria-label="Orientation suggestion"
         >
-          <div className="galaxy-tilt-card" onClick={dismissTiltHint}>
+          <div className="galaxy-pre-tilt-content">
             <div className="galaxy-tilt-phone" aria-hidden="true">
-              <svg width="34" height="52" viewBox="0 0 34 52" fill="none">
+              <svg width="44" height="66" viewBox="0 0 34 52" fill="none">
                 <rect
                   x="2"
                   y="2"
@@ -838,85 +849,110 @@ export function MemoryGalaxyScene() {
                   height="48"
                   rx="6"
                   stroke="#E9C77D"
-                  strokeWidth="1.5"
-                  fill="rgba(22, 16, 38, 0.72)"
+                  strokeWidth="1.8"
+                  fill="rgba(22, 16, 38, 0.88)"
                 />
-                <line x1="12" y1="6.5" x2="22" y2="6.5" stroke="rgba(255,242,228,0.5)" strokeWidth="1.2" strokeLinecap="round" />
-                <circle cx="17" cy="26" r="3" fill="rgba(233, 199, 125, 0.55)" />
-                <circle cx="17" cy="26" r="7" stroke="rgba(217, 166, 183, 0.35)" strokeWidth="0.9" strokeDasharray="2 2" />
-                <line x1="13" y1="45" x2="21" y2="45" stroke="rgba(255,242,228,0.45)" strokeWidth="1.2" strokeLinecap="round" />
+                <line x1="12" y1="6.5" x2="22" y2="6.5" stroke="rgba(255,242,228,0.6)" strokeWidth="1.4" strokeLinecap="round" />
+                <circle cx="17" cy="26" r="3.5" fill="#E9C77D" />
+                <circle cx="17" cy="26" r="8" stroke="rgba(233, 199, 125, 0.45)" strokeWidth="1" strokeDasharray="2 2" />
+                <line x1="13" y1="45" x2="21" y2="45" stroke="rgba(255,242,228,0.55)" strokeWidth="1.4" strokeLinecap="round" />
               </svg>
             </div>
-            <p className="galaxy-tilt-title">Tilt your phone.</p>
-            <p className="galaxy-tilt-sub">There&apos;s more to see this way.</p>
+
+            <p className="galaxy-pre-tilt-title">Tilt your phone sideways.</p>
+            <p className="galaxy-pre-tilt-sub">
+              Rotate to landscape for the full cosmic view...
+            </p>
+
+            <button
+              type="button"
+              onClick={handleEnterGalaxy}
+              className="btn-cinematic"
+              style={{
+                marginTop: "1.2rem",
+                padding: "0.75rem 1.75rem",
+                borderColor: "rgba(233, 199, 125, 0.65)",
+                color: "#E9C77D",
+                fontSize: "0.85rem",
+                letterSpacing: "0.14em",
+              }}
+            >
+              Enter Galaxy
+            </button>
           </div>
         </div>
       )}
 
       {/* Poetic Caption Overlay */}
-      <div
-        style={{
-          position: "fixed",
-          bottom: "max(4.4rem, calc(var(--safe-bottom) + 3.4rem))",
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          padding: "0 1.25rem",
-          pointerEvents: "none",
-          zIndex: 25,
-        }}
-      >
-        <p
+      {orientationAccepted && (
+        <div
           style={{
-            fontFamily: "var(--font-serif)",
-            fontStyle: "italic",
-            fontSize: "clamp(1.1rem, 2.5vw, 1.55rem)",
-            color: "rgba(255, 242, 228, 0.88)",
-            textShadow: "0 2px 18px rgba(0, 0, 0, 0.95)",
+            position: "fixed",
+            bottom: "max(4.4rem, calc(var(--safe-bottom) + 3.4rem))",
+            left: 0,
+            right: 0,
+            textAlign: "center",
+            padding: "0 1.25rem",
+            pointerEvents: "none",
+            zIndex: 25,
+            animation: "galaxyTiltFadeIn 1s ease forwards",
           }}
         >
-          All these little moments, together, make one beautiful universe.
-        </p>
-        <p
-          style={{
-            fontSize: "0.72rem",
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            color: "rgba(233, 199, 125, 0.65)",
-            marginTop: "0.35rem",
-          }}
-        >
-          Drag to orbit • Zoom in to discover • Tap any star
-        </p>
-      </div>
+          <p
+            style={{
+              fontFamily: "var(--font-serif)",
+              fontStyle: "italic",
+              fontSize: "clamp(1.1rem, 2.5vw, 1.55rem)",
+              color: "rgba(255, 242, 228, 0.88)",
+              textShadow: "0 2px 18px rgba(0, 0, 0, 0.95)",
+            }}
+          >
+            All these little moments, together, make one beautiful universe.
+          </p>
+          <p
+            style={{
+              fontSize: "0.72rem",
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "rgba(233, 199, 125, 0.65)",
+              marginTop: "0.35rem",
+            }}
+          >
+            Drag to orbit • Zoom in to discover • Tap any star
+          </p>
+        </div>
+      )}
 
       {/* Galaxy Controls */}
-      <div
-        style={{
-          position: "fixed",
-          bottom: "max(1.1rem, var(--safe-bottom))",
-          left: "50%",
-          transform: "translateX(-50%)",
-          display: "flex",
-          alignItems: "center",
-          gap: "0.65rem",
-          zIndex: 30,
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => resetCameraFnRef.current?.()}
-          className="hud-btn"
+      {orientationAccepted && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "max(1.1rem, var(--safe-bottom))",
+            left: "50%",
+            transform: "translateX(-50%)",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.65rem",
+            zIndex: 30,
+            animation: "galaxyTiltFadeIn 1s ease forwards",
+          }}
         >
-          <Compass size={13} />
-          <span>Reset View</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => resetCameraFnRef.current?.()}
+            className="hud-btn"
+          >
+            <Compass size={13} />
+            <span>Reset View</span>
+          </button>
 
-        <button type="button" onClick={handleReplayJourney} className="hud-btn">
-          <RotateCcw size={13} />
-          <span>Replay</span>
-        </button>
-      </div>
+          <button type="button" onClick={handleReplayJourney} className="hud-btn">
+            <RotateCcw size={13} />
+            <span>Replay</span>
+          </button>
+        </div>
+      )}
 
       {/* Focused Memory Reveal after gliding close */}
       {selectedSrc && (
@@ -980,6 +1016,52 @@ export function MemoryGalaxyScene() {
       )}
 
       <style jsx>{`
+        .galaxy-pre-tilt-canvas {
+          position: fixed;
+          inset: 0;
+          background: radial-gradient(circle at center, #07060f 0%, #020205 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1.5rem;
+          z-index: 50;
+          animation: galaxyTiltFadeIn 0.75s ease forwards;
+        }
+
+        .galaxy-pre-tilt-content {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          max-width: 22rem;
+          padding: 2.2rem 1.6rem;
+          border-radius: 28px;
+          background: radial-gradient(ellipse at center, rgba(28, 20, 52, 0.72) 0%, rgba(10, 8, 22, 0.6) 100%);
+          border: 1px solid rgba(233, 199, 125, 0.35);
+          box-shadow: 0 16px 45px rgba(0, 0, 0, 0.8), 0 0 35px rgba(233, 199, 125, 0.18);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+        }
+
+        .galaxy-pre-tilt-title {
+          font-family: var(--font-serif);
+          font-style: italic;
+          font-size: clamp(1.75rem, 6.8vw, 2.2rem);
+          font-weight: 400;
+          line-height: 1.18;
+          color: #FFF5E8;
+          margin-top: 1.1rem;
+          text-shadow: 0 0 24px rgba(233, 199, 125, 0.5), 0 2px 14px rgba(0, 0, 0, 0.9);
+        }
+
+        .galaxy-pre-tilt-sub {
+          font-size: 0.86rem;
+          line-height: 1.45;
+          letter-spacing: 0.04em;
+          color: rgba(236, 224, 245, 0.82);
+          margin-top: 0.55rem;
+        }
+
         .galaxy-tilt-wrap {
           position: fixed;
           top: max(4.6rem, calc(var(--safe-top) + 3.9rem));
