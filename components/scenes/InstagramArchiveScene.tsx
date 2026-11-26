@@ -70,22 +70,28 @@ export function InstagramArchiveScene() {
     const wrapEl = titleWrapRef.current;
     if (!wrapEl) return;
 
+    const isFinalNakhreIntro =
+      beat === "MOMENT_TITLE" && momentIdx === LITTLE_MOMENT_CONVERSATIONS.length - 1;
+
     const lines = lineRefs.current.filter(Boolean) as HTMLParagraphElement[];
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
       gsap.set(wrapEl, { opacity: 1, y: 0, clearProps: "filter,transform" });
       lines.forEach((l) => gsap.set(l, { opacity: 1, y: 0, clearProps: "filter,transform" }));
       if (subRef.current) gsap.set(subRef.current, { opacity: 1, clearProps: "filter,transform" });
-      const timer = setTimeout(advanceBeat, beat === "PART1_INTRO" ? 3400 : 2400);
+      const timer = setTimeout(
+        advanceBeat,
+        beat === "PART1_INTRO" ? 3400 : isFinalNakhreIntro ? 3700 : 2400
+      );
       return () => clearTimeout(timer);
     }
 
-    // Hold each intro beat comfortably at full crisp readability; Scene 5 opening intro held +1.0s longer
+    // Hold each intro beat comfortably at full crisp readability; Final moment ("un nakhron...") extended by +0.9s
     const holdSec =
       beat === "PART1_INTRO"
         ? 3.3
-        : beat === "MOMENT_TITLE" && momentIdx === LITTLE_MOMENT_CONVERSATIONS.length - 1
-          ? 2.8
+        : isFinalNakhreIntro
+          ? 3.7
           : lines.length > 1
             ? 2.7
             : beat === "PART1_TITLE" || beat === "MOMENT_TITLE"
