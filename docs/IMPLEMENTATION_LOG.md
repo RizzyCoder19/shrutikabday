@@ -182,3 +182,8 @@
   - Central core throb: Galactic core points expand and brighten on the hook downbeats.
   - Photo planet pulse: Shruti's portraits gently expand and brighten on every "Haan tu hai" vocal hit.
   - Initial render appearance: Pulse is active from frame 0 so as the galaxy renders and camera pulls back from the core, the cosmic heartbeat is already pulsing to the song.
+
+### 7. Precise 0.8s Delayed Instant Start for "Lut Gaye"
+- **User Gesture Playback Authorization**: `musicCueManager.startMainTrack(soundEnabled, delayMs = 800)` now synchronously initiates `.play()` at `volume = 0` inside the click handler of the "Ready?" button, ensuring complete compliance with mobile/desktop browser autoplay policies.
+- **0.8s Precise Delayed Instant Kick-In**: After exactly 800ms of dramatic silence during the button exit fade, the track rewinds cleanly to `0:00` and immediately ramps up to target volume (`0.74`) over 150ms.
+- **Scene Transition Protection**: Guarded against `sync()` overriding the 800ms timer when transitioning into `SPIDERMAN` at 900ms.

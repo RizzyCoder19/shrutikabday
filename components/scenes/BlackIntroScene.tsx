@@ -196,7 +196,7 @@ export function BlackIntroScene() {
     setExiting(true);
     recordInteraction();
     audioSynth.unlock();
-    musicCueManager.startMainTrack(soundEnabled);
+    musicCueManager.startMainTrack(soundEnabled, 800);
     if (soundEnabled) {
       audioSynth.playGentleChime(523.25);
     }

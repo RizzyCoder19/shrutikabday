@@ -73,7 +73,9 @@ class MusicCueManager {
   }
 
   /**
-   * Called directly from user gesture when beginning from Intro (0:00 start after delay).
+   * Called directly from user gesture when beginning from Intro (0:00 start after 0.8s delay).
+   * Unlocks audio immediately inside the click gesture at volume 0,
+   * then at exactly 800ms (0.8s), restarts from 0:00 and immediately brings volume up.
    */
   public startMainTrack(soundEnabled: boolean, delayMs = 800): void {
     this.unlocked = true;
@@ -98,21 +100,41 @@ class MusicCueManager {
     el.muted = !soundEnabled;
     el.volume = 0;
 
+    // CRITICAL FOR BROWSER AUTOPLAY & MOBILE COMPLIANCE:
+    // Invoke play() synchronously right here inside the user click gesture event handler
+    // so the browser unlocks media playback without policy rejection.
+    // It runs silently at volume 0 during the 0.8s transition pause.
+    if (soundEnabled) {
+      const p = el.play();
+      if (p !== undefined) {
+        p.catch(() => {});
+      }
+    }
+
     const beginPlay = () => {
       this.pendingStartTimer = null;
       if (this.primaryAudio !== el || this.isEndingPhase) return;
       el.muted = this.muted;
-      el.play()
-        .then(() => {
-          if (!this.muted && !this.isEndingPhase) {
-            this.fadePrimaryVolume(
-              SCENE_AUDIO_CUES[this.currentScene]?.volume || SCENE_AUDIO_CUES.SPIDERMAN.volume,
-              1100,
-              false
-            );
-          }
-        })
-        .catch(() => {});
+
+      // Rewind to 0:00 so the opening piano notes of Lut Gaye begin exactly at 0.8s!
+      try {
+        el.currentTime = 0;
+      } catch {}
+
+      if (el.paused && !this.muted) {
+        el.play().catch(() => {});
+      }
+
+      if (!this.muted && !this.isEndingPhase) {
+        const cueVol = SCENE_AUDIO_CUES[this.currentScene]?.volume;
+        const targetVol =
+          cueVol !== undefined && cueVol > 0
+            ? cueVol
+            : SCENE_AUDIO_CUES.SPIDERMAN.volume || 0.74;
+
+        // Immediate audio start at 0.8s with a smooth 150ms anti-pop ramp
+        this.fadePrimaryVolume(targetVol, 150, false);
+      }
     };
 
     if (delayMs > 0 && typeof window !== "undefined") {
