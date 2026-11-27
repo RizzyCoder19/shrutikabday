@@ -289,6 +289,14 @@ class MusicCueManager {
     return this.primaryAudio ? this.primaryAudio.currentTime : 0;
   }
 
+  public isEndingPlaying(): boolean {
+    return Boolean(this.endingAudio && !this.endingAudio.paused && !this.endingAudio.ended);
+  }
+
+  public getEndingAudio(): HTMLAudioElement | null {
+    return this.endingAudio;
+  }
+
   /**
    * Full reset when replaying the journey from Chapter 01
    */

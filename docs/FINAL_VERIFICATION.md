@@ -102,3 +102,10 @@
   - Chapter 12 Transition: `12/12•Memory GalaxySound On`, aria `Chapter 12: The Memory Galaxy`.
   - Console Errors: `0`.
   - Multi-track handoff verified without race conditions.
+
+### Version 5.0.1: Galaxy Pulse Zoom In/Out Verification
+- **TypeScript**: `npx tsc --noEmit` -> 0 errors.
+- **ESLint**: `npm run lint` -> 0 errors.
+- **Next.js Production Build**: `npm run build` -> Exit code 0 (`✓ Compiled successfully in 9.4s`, `/` 88.4 kB, First Load JS 192 kB).
+- **Audio Pulse Telemetry**: Autocorrelation confirmed ~83.1 BPM tempo lock; pulse wave is phase-synchronized to `musicCueManager.getCurrentTime()`.
+- **Runtime Headless Test**: `scratch/verify-pulse.mjs` verified canvas rendering and 0 console errors on `http://localhost:3000/?scene=MEMORY_GALAXY`.

@@ -172,3 +172,13 @@
   - Beat 4 (21.5s): *"And I hope, whenever you look up at the stars, one of them makes you smile."*
   - Beat 5 (26.5s): *"— Umar"* (intimate signature, no repeat of "secret admirer").
 - **Typography & Interaction**: Editorial serif typography with warm rose/champagne tones, non-intrusive backdrop, full interactive OrbitControls maintained throughout.
+
+### 6. Beat-Synchronized Galaxy Pulse Zoom In/Out Matching "Haa Tu Hai"
+- **Acoustic Analysis & Tempo Lock**: Analyzed `public/audio/ha tu hai.m4a` via autocorrelation, locking the tempo at ~83.1 BPM (beat period $T_{beat} = 0.722$s, hook 2-beat vocal phrase cycle $T_{hook} = 1.444$s).
+- **Direct Playback Time Phase Sync**: Imported `musicCueManager` into `MemoryGalaxyScene.tsx` and used `musicCueManager.getCurrentTime()` / `isEndingPlaying()`. When playing, the pulse is 100% phase-locked to the audio buffer without drifting.
+- **Multi-Layered Zoom In/Out Breathing**:
+  - `galaxyRoot` group scale: Overall galaxy disk (stars, core, spiral arms, and all photo planets) breathes with ~14% zoom in and out amplitude.
+  - Camera FOV modulation: Optical camera breathing ($72^\circ \to \sim 67.8^\circ$ on peak swell) creating high-end cinematic lens zoom.
+  - Central core throb: Galactic core points expand and brighten on the hook downbeats.
+  - Photo planet pulse: Shruti's portraits gently expand and brighten on every "Haan tu hai" vocal hit.
+  - Initial render appearance: Pulse is active from frame 0 so as the galaxy renders and camera pulls back from the core, the cosmic heartbeat is already pulsing to the song.

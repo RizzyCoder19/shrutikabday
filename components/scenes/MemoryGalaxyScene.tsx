@@ -7,6 +7,7 @@ import { SHRUTI_PHOTOS } from "@/content/gallery";
 import { FIRST_CHAT_SCREENSHOTS, MOMENTS_CHAT_SCREENSHOTS } from "@/content/chats";
 import { useExperienceStore } from "@/state/experience-store";
 import { audioSynth } from "@/lib/audio/audio-synthesizer";
+import { musicCueManager } from "@/lib/audio/music-cue-manager";
 import { RotateCcw, Compass, X } from "lucide-react";
 
 interface MemoryMedia {
@@ -260,8 +261,16 @@ export function MemoryGalaxyScene() {
     pointsGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     pointsGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
+    const galaxyRoot = new THREE.Group();
+    scene.add(galaxyRoot);
+
+    const baseStarSize = params.size;
+    const baseCoreSize = isMobile ? 0.058 : 0.046;
+    const baseCoreOpacity = 0.65;
+    const baseFov = 72;
+
     const pointsMat = new THREE.PointsMaterial({
-      size: params.size,
+      size: baseStarSize,
       map: starGlowTex,
       sizeAttenuation: true,
       depthWrite: false,
@@ -272,7 +281,7 @@ export function MemoryGalaxyScene() {
     });
 
     const starPoints = new THREE.Points(pointsGeo, pointsMat);
-    scene.add(starPoints);
+    galaxyRoot.add(starPoints);
 
     // Highly dense, luminous warm galactic core bulge
     const coreGeo = new THREE.BufferGeometry();
@@ -295,23 +304,23 @@ export function MemoryGalaxyScene() {
     coreGeo.setAttribute("position", new THREE.BufferAttribute(corePos, 3));
     coreGeo.setAttribute("color", new THREE.BufferAttribute(coreCol, 3));
     const coreMat = new THREE.PointsMaterial({
-      size: isMobile ? 0.058 : 0.046,
+      size: baseCoreSize,
       map: starGlowTex,
       sizeAttenuation: true,
       depthWrite: false,
       transparent: true,
-      opacity: 0.65,
+      opacity: baseCoreOpacity,
       blending: THREE.AdditiveBlending,
       vertexColors: true,
     });
     const corePoints = new THREE.Points(coreGeo, coreMat);
-    scene.add(corePoints);
+    galaxyRoot.add(corePoints);
 
     // 2. Luminous miniature celestial photo planets embedded across all 3 spiral arms
     // Each planet uses spherical curvature projection, limb darkening, atmospheric Fresnel rim lighting,
     // and champagne/ivory/lavender/rose cosmic corona matching surrounding stars.
     const spritesGroup = new THREE.Group();
-    scene.add(spritesGroup);
+    galaxyRoot.add(spritesGroup);
 
     const createdTextures: THREE.Texture[] = [];
     const createdMaterials: THREE.SpriteMaterial[] = [];
@@ -673,6 +682,49 @@ export function MemoryGalaxyScene() {
       const dt = Math.min((now - prevTime) / 1000, 0.05);
       prevTime = now;
 
+      // ─── Beat-Synchronized Pulse & Zoom In/Out Matching "Haa Tu Hai" ───
+      // Song tempo ~83.1 BPM:
+      // Hook phrase cycle is 2 beats = 1.444s; individual beat is 0.722s
+      const endingTime = musicCueManager.getCurrentTime();
+      const isSongPlaying = musicCueManager.isEndingPlaying();
+      const songT = isSongPlaying && endingTime >= 0 ? endingTime : now * 0.001;
+
+      const BEAT_SEC = 0.722;
+      const HOOK_PHRASE_SEC = 1.444; // 2-beat vocal hook motif ("Haan tu hai...")
+
+      // 1. Hook vocal swell ("Haan tu hai..."): smooth oceanic breathing cycle
+      const hookPhase = (songT / HOOK_PHRASE_SEC) % 1.0;
+      const hookSwell = Math.pow(Math.sin(hookPhase * Math.PI), 1.6);
+
+      // 2. Rhythmic beat punch on every downbeat (0.722s period)
+      const beatPhase = (songT / BEAT_SEC) % 1.0;
+      const beatPunch = Math.pow(Math.max(0, 1 - beatPhase * 1.8), 2.2);
+
+      // Master zoom in and out pulse (peaks on the hook beat, breathes gently back)
+      // Total zoom in and out pulse reaches ~14% amplitude for a rich, breathing universe
+      const rawPulse = hookSwell * 0.095 + beatPunch * 0.045;
+      const activePulse = (reducedMotion || selectedOpen || focusAnim.active) ? 0 : rawPulse;
+
+      // Pulse the entire galaxy (stars, spiral arms, core, and photo planets)
+      const zoomScale = 1.0 + activePulse;
+      galaxyRoot.scale.set(zoomScale, zoomScale, zoomScale);
+
+      // Cinematic camera lens zoom breathing (FOV expands and contracts with the beat)
+      if (!reducedMotion && !selectedOpen && !focusAnim.active) {
+        camera.fov = baseFov - activePulse * 4.2;
+        camera.updateProjectionMatrix();
+      } else if (camera.fov !== baseFov && !focusAnim.active) {
+        camera.fov = baseFov;
+        camera.updateProjectionMatrix();
+      }
+
+      // Dynamic central galactic core pulse (throbbing heart of the universe)
+      coreMat.size = baseCoreSize * (1.0 + hookSwell * 0.42 + beatPunch * 0.25);
+      coreMat.opacity = Math.min(0.95, baseCoreOpacity * (1.0 + beatPunch * 0.3 + hookSwell * 0.18));
+
+      // Star particle size shimmer
+      pointsMat.size = baseStarSize * (1.0 + hookSwell * 0.22 + beatPunch * 0.16);
+
       if (focusAnim.active) {
         focusAnim.elapsed += dt;
         const p = Math.min(1, focusAnim.elapsed / focusAnim.duration);
@@ -699,17 +751,18 @@ export function MemoryGalaxyScene() {
       if (!reducedMotion && !userInteracting && !focusAnim.active && !selectedOpen) {
         // Serene cosmic spiral drift resembling a true living galaxy
         const rotSpeed = 0.048 * dt;
-        starPoints.rotation.y += rotSpeed;
-        corePoints.rotation.y += rotSpeed * 0.72;
-        spritesGroup.rotation.y += rotSpeed;
+        galaxyRoot.rotation.y += rotSpeed;
 
         const tSec = now * 0.001;
-        for (let i = 0; i < spriteObjects.length; i += 5) {
+        for (let i = 0; i < spriteObjects.length; i++) {
           const item = spriteObjects[i];
-          item.sprite.position.y =
-            item.baseY + Math.sin(tSec * item.pulseSpeed * 0.65 + item.bobPhase) * 0.008;
-          const shimmer = 1 + Math.sin(tSec * 1.1 + item.bobPhase) * 0.04;
-          const s = item.baseScale * shimmer;
+          if (i % 3 === 0) {
+            item.sprite.position.y =
+              item.baseY + Math.sin(tSec * item.pulseSpeed * 0.65 + item.bobPhase) * 0.008;
+          }
+          // Photo planets zoom pulse in sync with the hook!
+          const planetPulse = 1.0 + hookSwell * 0.14 + beatPunch * 0.09;
+          const s = item.baseScale * planetPulse;
           item.sprite.scale.set(s, s, 1);
         }
       }
