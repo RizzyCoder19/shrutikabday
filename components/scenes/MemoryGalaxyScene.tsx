@@ -75,11 +75,11 @@ function createStarGlowTexture(): THREE.CanvasTexture {
   cv.height = size;
   const c = cv.getContext("2d")!;
   const grad = c.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  // Crisp pinpoint astronomical star core with delicate exponential halo
+  // Crisp bright astronomical core with luminous Milky Way corona
   grad.addColorStop(0, "rgba(255, 255, 255, 1)");
-  grad.addColorStop(0.08, "rgba(255, 252, 245, 0.92)");
-  grad.addColorStop(0.22, "rgba(245, 220, 175, 0.35)");
-  grad.addColorStop(0.55, "rgba(180, 165, 235, 0.06)");
+  grad.addColorStop(0.12, "rgba(255, 252, 245, 0.96)");
+  grad.addColorStop(0.28, "rgba(255, 226, 175, 0.55)");
+  grad.addColorStop(0.58, "rgba(195, 175, 245, 0.16)");
   grad.addColorStop(1, "rgba(0, 0, 0, 0)");
   c.fillStyle = grad;
   c.fillRect(0, 0, size, size);
@@ -95,9 +95,9 @@ function createNebulaGlowTexture(): THREE.CanvasTexture {
   cv.height = size;
   const c = cv.getContext("2d")!;
   const grad = c.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  grad.addColorStop(0, "rgba(255, 246, 236, 0.38)");
-  grad.addColorStop(0.28, "rgba(225, 185, 245, 0.16)");
-  grad.addColorStop(0.62, "rgba(115, 145, 245, 0.05)");
+  grad.addColorStop(0, "rgba(255, 248, 242, 0.52)");
+  grad.addColorStop(0.3, "rgba(228, 185, 250, 0.24)");
+  grad.addColorStop(0.65, "rgba(110, 150, 255, 0.08)");
   grad.addColorStop(1, "rgba(0, 0, 0, 0)");
   c.fillStyle = grad;
   c.fillRect(0, 0, size, size);
@@ -218,20 +218,21 @@ export function MemoryGalaxyScene() {
     controls.addEventListener("start", onControlStart);
     controls.addEventListener("end", onControlEnd);
 
-    // 1. Milky Way barred-spiral galaxy with realistic pinpoint stars & volumetric dust glow
+    // 1. Milky Way barred-spiral galaxy with vibrant multi-color glowing particles & dust clouds
     const params = {
-      count: isMobile ? 36000 : 58000,
-      size: isMobile ? 0.017 : 0.013,
+      count: isMobile ? 48000 : 74000,
+      size: isMobile ? 0.022 : 0.017,
       radius: 2.95,
       branches: 4,
       spin: 3.45,
       randomness: 2.0,
-      randomnessPower: 3.6,
+      randomnessPower: 3.55,
       insideColor: "#FFFDF7",
-      midColor: "#F5CF86",
-      roseColor: "#DF97BF",
-      outsideColor: "#768AF2",
-      tipColor: "#BFD6FF",
+      midColor: "#FFCE73",
+      roseColor: "#E87AB5",
+      magentaColor: "#B975F5",
+      outsideColor: "#5AA2FF",
+      tipColor: "#A8DCFF",
     };
 
     const starGlowTex = createStarGlowTexture();
@@ -243,6 +244,7 @@ export function MemoryGalaxyScene() {
     const colorInside = new THREE.Color(params.insideColor);
     const colorMid = new THREE.Color(params.midColor);
     const colorRose = new THREE.Color(params.roseColor);
+    const colorMagenta = new THREE.Color(params.magentaColor);
     const colorOutside = new THREE.Color(params.outsideColor);
     const colorTip = new THREE.Color(params.tipColor);
 
@@ -271,11 +273,10 @@ export function MemoryGalaxyScene() {
       // Exponential core clustering + luminous outer trailing fragments
       const isOuterFragment = i % 5 === 0;
       const r = isOuterFragment
-        ? (0.55 + Math.pow(Math.random(), 0.9) * 0.6) * params.radius
-        : Math.pow(Math.random(), 2.0) * params.radius;
+        ? (0.52 + Math.pow(Math.random(), 0.9) * 0.62) * params.radius
+        : Math.pow(Math.random(), 1.95) * params.radius;
       const spinAngle = r * params.spin;
       const branchIndex = i % params.branches;
-      // 2 major arms + 2 slightly offset secondary arms like the Milky Way
       const branchAngle = (branchIndex / params.branches) * Math.PI * 2 + barAngle;
 
       const armSpread = 0.28 + r * 0.24;
@@ -289,15 +290,16 @@ export function MemoryGalaxyScene() {
 
       const t = Math.min(1.15, r / params.radius);
       const mixed = colorInside.clone();
-      if (t < 0.18) {
-        mixed.lerp(colorMid, t / 0.18);
-      } else if (t < 0.48) {
-        mixed.copy(colorMid).lerp(colorRose, (t - 0.18) / 0.3);
-      } else if (t < 0.78) {
-        mixed.copy(colorRose).lerp(colorOutside, (t - 0.48) / 0.3);
+      if (t < 0.16) {
+        mixed.lerp(colorMid, t / 0.16);
+      } else if (t < 0.4) {
+        mixed.copy(colorMid).lerp(colorRose, (t - 0.16) / 0.24);
+      } else if (t < 0.62) {
+        mixed.copy(colorRose).lerp(colorMagenta, (t - 0.4) / 0.22);
+      } else if (t < 0.84) {
+        mixed.copy(colorMagenta).lerp(colorOutside, (t - 0.62) / 0.22);
       } else {
-        // Outermost fragment glows with luminous ice-blue/periwinkle starlight
-        mixed.copy(colorOutside).lerp(colorTip, Math.min(1, (t - 0.78) / 0.35));
+        mixed.copy(colorOutside).lerp(colorTip, Math.min(1, (t - 0.84) / 0.3));
       }
 
       colors[i3] = mixed.r;
@@ -325,30 +327,31 @@ export function MemoryGalaxyScene() {
     const starPoints = new THREE.Points(pointsGeo, pointsMat);
     galaxyRoot.add(starPoints);
 
-    // Milky Way luminous nebula band & outer-fragment glow clouds
-    const nebulaCount = isMobile ? 1600 : 2800;
+    // Milky Way multi-color glowing nebula band & H-II star-forming clouds
+    const nebulaCount = isMobile ? 2800 : 4600;
     const nebulaGeo = new THREE.BufferGeometry();
     const nebulaPos = new Float32Array(nebulaCount * 3);
     const nebulaCol = new Float32Array(nebulaCount * 3);
     for (let i = 0; i < nebulaCount; i++) {
       const i3 = i * 3;
       const neg = () => (Math.random() < 0.5 ? 1 : -1);
-      // Span from inner arms all the way into the outermost trailing fragment so tips glow
-      const r = (0.18 + Math.pow(Math.random(), 0.95) * 0.96) * params.radius;
+      const r = (0.14 + Math.pow(Math.random(), 0.92) * 0.98) * params.radius;
       const spinAngle = r * params.spin;
       const branchAngle = ((i % params.branches) / params.branches) * Math.PI * 2 + barAngle;
-      const scatter = 0.18 + r * 0.12;
+      const scatter = 0.2 + r * 0.13;
 
       nebulaPos[i3] = Math.cos(branchAngle + spinAngle) * r + (Math.random() - 0.5) * scatter;
       nebulaPos[i3 + 1] = Math.pow(Math.random(), 2.2) * neg() * 0.14;
       nebulaPos[i3 + 2] = Math.sin(branchAngle + spinAngle) * r + (Math.random() - 0.5) * scatter;
 
       const t = r / params.radius;
-      const nc = t < 0.45
-        ? colorMid.clone().lerp(colorRose, t / 0.45)
-        : t < 0.8
-          ? colorRose.clone().lerp(colorOutside, (t - 0.45) / 0.35)
-          : colorOutside.clone().lerp(colorTip, Math.min(1, (t - 0.8) / 0.34));
+      const nc = t < 0.32
+        ? colorMid.clone().lerp(colorRose, t / 0.32)
+        : t < 0.62
+          ? colorRose.clone().lerp(colorMagenta, (t - 0.32) / 0.3)
+          : t < 0.85
+            ? colorMagenta.clone().lerp(colorOutside, (t - 0.62) / 0.23)
+            : colorOutside.clone().lerp(colorTip, Math.min(1, (t - 0.85) / 0.3));
       nebulaCol[i3] = nc.r;
       nebulaCol[i3 + 1] = nc.g;
       nebulaCol[i3 + 2] = nc.b;
@@ -356,21 +359,56 @@ export function MemoryGalaxyScene() {
     nebulaGeo.setAttribute("position", new THREE.BufferAttribute(nebulaPos, 3));
     nebulaGeo.setAttribute("color", new THREE.BufferAttribute(nebulaCol, 3));
     const nebulaMat = new THREE.PointsMaterial({
-      size: isMobile ? 0.22 : 0.18,
+      size: isMobile ? 0.26 : 0.21,
       map: nebulaGlowTex,
       sizeAttenuation: true,
       depthWrite: false,
       transparent: true,
-      opacity: 0.085,
+      opacity: 0.14,
       blending: THREE.AdditiveBlending,
       vertexColors: true,
     });
     const nebulaPoints = new THREE.Points(nebulaGeo, nebulaMat);
     galaxyRoot.add(nebulaPoints);
 
+    // Sparkling luminous foreground supergiant stars in gold, rose, violet & cyan-blue
+    const gemCount = isMobile ? 650 : 1100;
+    const gemGeo = new THREE.BufferGeometry();
+    const gemPos = new Float32Array(gemCount * 3);
+    const gemCol = new Float32Array(gemCount * 3);
+    const gemPalette = [colorInside, colorMid, colorRose, colorMagenta, colorOutside, colorTip];
+    for (let i = 0; i < gemCount; i++) {
+      const i3 = i * 3;
+      const r = (0.12 + Math.pow(Math.random(), 0.95) * 0.96) * params.radius;
+      const spinAngle = r * params.spin;
+      const branchAngle = ((i % params.branches) / params.branches) * Math.PI * 2 + barAngle;
+      const scatter = 0.22 + r * 0.15;
+      gemPos[i3] = Math.cos(branchAngle + spinAngle) * r + (Math.random() - 0.5) * scatter;
+      gemPos[i3 + 1] = (Math.random() - 0.5) * 0.22;
+      gemPos[i3 + 2] = Math.sin(branchAngle + spinAngle) * r + (Math.random() - 0.5) * scatter;
+      const gc = gemPalette[i % gemPalette.length];
+      gemCol[i3] = gc.r;
+      gemCol[i3 + 1] = gc.g;
+      gemCol[i3 + 2] = gc.b;
+    }
+    gemGeo.setAttribute("position", new THREE.BufferAttribute(gemPos, 3));
+    gemGeo.setAttribute("color", new THREE.BufferAttribute(gemCol, 3));
+    const gemMat = new THREE.PointsMaterial({
+      size: isMobile ? 0.048 : 0.038,
+      map: starGlowTex,
+      sizeAttenuation: true,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.92,
+      blending: THREE.AdditiveBlending,
+      vertexColors: true,
+    });
+    const gemPoints = new THREE.Points(gemGeo, gemMat);
+    galaxyRoot.add(gemPoints);
+
     // Highly dense, luminous warm galactic core bulge
     const coreGeo = new THREE.BufferGeometry();
-    const coreCount = isMobile ? 1400 : 2600;
+    const coreCount = isMobile ? 1800 : 3200;
     const corePos = new Float32Array(coreCount * 3);
     const coreCol = new Float32Array(coreCount * 3);
     for (let i = 0; i < coreCount; i++) {
@@ -389,12 +427,12 @@ export function MemoryGalaxyScene() {
     coreGeo.setAttribute("position", new THREE.BufferAttribute(corePos, 3));
     coreGeo.setAttribute("color", new THREE.BufferAttribute(coreCol, 3));
     const coreMat = new THREE.PointsMaterial({
-      size: isMobile ? 0.036 : 0.028,
+      size: isMobile ? 0.046 : 0.036,
       map: starGlowTex,
       sizeAttenuation: true,
       depthWrite: false,
       transparent: true,
-      opacity: 0.56,
+      opacity: 0.72,
       blending: THREE.AdditiveBlending,
       vertexColors: true,
     });
@@ -406,12 +444,12 @@ export function MemoryGalaxyScene() {
       map: nebulaGlowTex,
       color: new THREE.Color("#FFE8C2"),
       transparent: true,
-      opacity: 0.3,
+      opacity: 0.36,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     });
     const coreHaloSprite = new THREE.Sprite(coreHaloMat);
-    coreHaloSprite.scale.set(1.45, 0.98, 1);
+    coreHaloSprite.scale.set(1.6, 1.05, 1);
     galaxyRoot.add(coreHaloSprite);
 
     // Distant deep-space background starfield
@@ -635,32 +673,82 @@ export function MemoryGalaxyScene() {
       }>;
       if (valid.length === 0) return;
 
-      // Weight Shruti's photographs ~90% of all planets so her portraits fill all 3 spiral arms
-      const weightedPool: typeof valid = [];
-      for (const entry of valid) {
-        const isShrutiPhoto = entry.item.src.includes("/images/shruti/");
-        const repeats = isShrutiPhoto ? 6 : 1;
-        for (let rIdx = 0; rIdx < repeats; rIdx++) {
-          weightedPool.push(entry);
+      // Interleave Shruti's photos evenly (never consecutive duplicates) and enforce spatial separation
+      // so the same picture is NEVER placed near another copy of itself.
+      const shrutiEntries = valid.filter((v) => v.item.src.includes("/images/shruti/"));
+      const otherEntries = valid.filter((v) => !v.item.src.includes("/images/shruti/"));
+
+      const shuffledOrder: typeof valid = [];
+      const maxRounds = 12;
+      for (let round = 0; round < maxRounds; round++) {
+        const roundShruti = [...shrutiEntries].sort(() => Math.random() - 0.5);
+        for (let k = 0; k < roundShruti.length; k++) {
+          // Prevent adjacent match across round boundaries
+          if (
+            shuffledOrder.length > 0 &&
+            shuffledOrder[shuffledOrder.length - 1].item.src === roundShruti[k].item.src &&
+            roundShruti.length > 1
+          ) {
+            const swapIdx = (k + 1) % roundShruti.length;
+            [roundShruti[k], roundShruti[swapIdx]] = [roundShruti[swapIdx], roundShruti[k]];
+          }
+          shuffledOrder.push(roundShruti[k]);
+        }
+        if (otherEntries.length > 0) {
+          shuffledOrder.push(otherEntries[round % otherEntries.length]);
         }
       }
 
+      const placedPlanets: Array<{ x: number; y: number; z: number; src: string }> = [];
+      const minSamePhotoDistSq = 1.05 * 1.05; // Enforce >= 1.05 units between identical photos
+      const minAnyPhotoDistSq = 0.22 * 0.22;  // Prevent overlapping planets
+
       for (let i = 0; i < spriteCount; i++) {
-        const entry = weightedPool[i % weightedPool.length];
-        const r = 0.24 + Math.pow(Math.random(), 1.05) * (params.radius - 0.12);
-        const spinAngle = r * params.spin;
-        const branchAngle = ((i % params.branches) / params.branches) * Math.PI * 2;
-        const spread = 0.23 * (0.52 + r / params.radius);
-        const scatterX = (Math.random() - 0.5) * spread;
-        const scatterZ = (Math.random() - 0.5) * spread;
-        const heightJitter = (Math.random() - 0.5) * 0.26;
+        const entry = shuffledOrder[i % shuffledOrder.length];
+        let bestX = 0;
+        let bestY = 0;
+        let bestZ = 0;
+        let bestR = 0.5;
+
+        // Sample candidate positions along spiral arms and pick one far from any copy of the same photo
+        for (let attempt = 0; attempt < 24; attempt++) {
+          const r = 0.3 + Math.pow(Math.random(), 1.02) * (params.radius - 0.16);
+          const spinAngle = r * params.spin;
+          const branchIdx = (i + attempt) % params.branches;
+          const branchAngle = (branchIdx / params.branches) * Math.PI * 2 + barAngle;
+          const spread = 0.25 * (0.55 + r / params.radius);
+          const cx = Math.cos(branchAngle + spinAngle) * r + (Math.random() - 0.5) * spread;
+          const cy = (Math.random() - 0.5) * 0.26;
+          const cz = Math.sin(branchAngle + spinAngle) * r + (Math.random() - 0.5) * spread;
+
+          let tooClose = false;
+          for (let pIdx = 0; pIdx < placedPlanets.length; pIdx++) {
+            const p = placedPlanets[pIdx];
+            const dx = cx - p.x;
+            const dy = cy - p.y;
+            const dz = cz - p.z;
+            const distSq = dx * dx + dy * dy + dz * dz;
+            if (p.src === entry.item.src && distSq < minSamePhotoDistSq) {
+              tooClose = true;
+              break;
+            }
+            if (distSq < minAnyPhotoDistSq) {
+              tooClose = true;
+              break;
+            }
+          }
+
+          bestX = cx;
+          bestY = cy;
+          bestZ = cz;
+          bestR = r;
+          if (!tooClose) break;
+        }
+
+        placedPlanets.push({ x: bestX, y: bestY, z: bestZ, src: entry.item.src });
 
         const sprite = new THREE.Sprite(entry.mat);
-        sprite.position.set(
-          Math.cos(branchAngle + spinAngle) * r + scatterX,
-          heightJitter,
-          Math.sin(branchAngle + spinAngle) * r + scatterZ
-        );
+        sprite.position.set(bestX, bestY, bestZ);
 
         // Tiered planetary sizes: prominent and radiant so photos are the pure focal point
         const isHeroPlanet = i % 5 === 0;
@@ -678,9 +766,9 @@ export function MemoryGalaxyScene() {
         raycastSprites.push(sprite);
         spriteObjects.push({
           sprite,
-          orbitSpeed: (0.015 + Math.random() * 0.018) * (1 - Math.min(0.65, r / params.radius)),
+          orbitSpeed: (0.015 + Math.random() * 0.018) * (1 - Math.min(0.65, bestR / params.radius)),
           bobPhase: Math.random() * Math.PI * 2,
-          baseY: heightJitter,
+          baseY: bestY,
           baseScale,
           pulseSpeed: 0.9 + Math.random() * 1.1,
         });
@@ -870,6 +958,8 @@ export function MemoryGalaxyScene() {
       pointsMat.dispose();
       nebulaGeo.dispose();
       nebulaMat.dispose();
+      gemGeo.dispose();
+      gemMat.dispose();
       coreGeo.dispose();
       coreMat.dispose();
       coreHaloMat.dispose();
@@ -929,64 +1019,74 @@ export function MemoryGalaxyScene() {
         style={{ display: "block", width: "100%", height: "100%", touchAction: "none" }}
       />
 
-      {/* Poetic Caption & Final Cinematic Message Overlay */}
-      <div
-        style={{
-          position: "fixed",
-          bottom: "max(4.4rem, calc(var(--safe-bottom) + 3.4rem))",
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          padding: "0 1.25rem",
-          pointerEvents: "none",
-          zIndex: 25,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "0.45rem",
-        }}
-      >
-        {finalMessageStep === 0 && (
-          <div
+      {/* Initial Poetic Caption (Bottom, during galaxy immersion) */}
+      {finalMessageStep === 0 && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "max(4.4rem, calc(var(--safe-bottom) + 3.4rem))",
+            left: 0,
+            right: 0,
+            textAlign: "center",
+            padding: "0 1.25rem",
+            pointerEvents: "none",
+            zIndex: 25,
+            transition: "opacity 1.2s ease",
+            opacity: 1,
+          }}
+        >
+          <p
             style={{
-              transition: "opacity 1.2s ease",
-              opacity: 1,
+              fontFamily: "var(--font-serif)",
+              fontStyle: "italic",
+              fontSize: "clamp(1.1rem, 2.5vw, 1.55rem)",
+              color: "rgba(255, 242, 228, 0.9)",
+              textShadow: "0 0 18px rgba(233, 199, 125, 0.35), 0 2px 18px rgba(0, 0, 0, 0.95)",
             }}
           >
-            <p
-              style={{
-                fontFamily: "var(--font-serif)",
-                fontStyle: "italic",
-                fontSize: "clamp(1.1rem, 2.5vw, 1.55rem)",
-                color: "rgba(255, 242, 228, 0.88)",
-                textShadow: "0 2px 18px rgba(0, 0, 0, 0.95)",
-              }}
-            >
-              All these little moments, together, make one beautiful universe.
-            </p>
-            <p
-              style={{
-                fontSize: "0.72rem",
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                color: "rgba(233, 199, 125, 0.65)",
-                marginTop: "0.35rem",
-              }}
-            >
-              Drag to orbit • Zoom in to discover • Tap any star
-            </p>
-          </div>
-        )}
+            All these little moments, together, make one beautiful universe.
+          </p>
+          <p
+            style={{
+              fontSize: "0.72rem",
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "rgba(233, 199, 125, 0.72)",
+              marginTop: "0.35rem",
+            }}
+          >
+            Drag to orbit • Zoom in to discover • Tap any star
+          </p>
+        </div>
+      )}
 
-        {finalMessageStep >= 1 && (
+      {/* Final Cinematic Glowing Message Overlay (Top of Screen after galaxy settles) */}
+      {finalMessageStep >= 1 && (
+        <div
+          style={{
+            position: "fixed",
+            top: "max(4.1rem, calc(var(--safe-top) + 3.3rem))",
+            left: 0,
+            right: 0,
+            textAlign: "center",
+            padding: "0.75rem 1.25rem 1.5rem",
+            background:
+              "radial-gradient(ellipse at top, rgba(4, 3, 12, 0.72) 0%, rgba(4, 3, 12, 0.36) 55%, transparent 85%)",
+            pointerEvents: "none",
+            zIndex: 25,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
           <div
             style={{
-              maxWidth: "min(92vw, 36rem)",
+              maxWidth: "min(92vw, 38rem)",
               width: "100%",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: "0.42rem",
+              gap: "0.38rem",
               pointerEvents: "none",
             }}
           >
@@ -996,12 +1096,13 @@ export function MemoryGalaxyScene() {
                 fontFamily: "var(--font-serif)",
                 fontStyle: "italic",
                 fontSize: "clamp(1.18rem, 3.2vw, 1.62rem)",
-                color: "#FFF5E8",
-                textShadow: "0 2px 18px rgba(0, 0, 0, 0.95)",
-                lineHeight: 1.35,
+                color: "#FFF8EE",
+                textShadow:
+                  "0 0 18px rgba(255, 224, 165, 0.65), 0 0 36px rgba(233, 199, 125, 0.35), 0 2px 14px rgba(0, 0, 0, 0.98)",
+                lineHeight: 1.32,
                 margin: 0,
                 opacity: finalMessageStep >= 1 ? 1 : 0,
-                transition: "opacity 1.4s cubic-bezier(0.22, 1, 0.36, 1)",
+                animation: "galaxyTextFade 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards",
               }}
             >
               And one last thing, Gheli...
@@ -1012,10 +1113,11 @@ export function MemoryGalaxyScene() {
               <p
                 style={{
                   fontFamily: "var(--font-serif)",
-                  fontSize: "clamp(0.96rem, 2.5vw, 1.25rem)",
-                  color: "rgba(255, 242, 228, 0.88)",
-                  textShadow: "0 2px 16px rgba(0, 0, 0, 0.95)",
-                  lineHeight: 1.45,
+                  fontSize: "clamp(0.95rem, 2.4vw, 1.22rem)",
+                  color: "#FFF4E6",
+                  textShadow:
+                    "0 0 14px rgba(255, 240, 215, 0.45), 0 0 28px rgba(217, 166, 183, 0.28), 0 2px 14px rgba(0, 0, 0, 0.98)",
+                  lineHeight: 1.42,
                   margin: 0,
                   opacity: 1,
                   animation: "galaxyTextFade 1.3s ease forwards",
@@ -1030,10 +1132,11 @@ export function MemoryGalaxyScene() {
               <p
                 style={{
                   fontFamily: "var(--font-serif)",
-                  fontSize: "clamp(0.96rem, 2.5vw, 1.28rem)",
-                  color: "#F5CE86",
-                  textShadow: "0 0 20px rgba(233, 199, 125, 0.28), 0 2px 16px rgba(0, 0, 0, 0.95)",
-                  lineHeight: 1.48,
+                  fontSize: "clamp(0.95rem, 2.45vw, 1.25rem)",
+                  color: "#FFE09E",
+                  textShadow:
+                    "0 0 18px rgba(255, 210, 120, 0.65), 0 0 38px rgba(233, 199, 125, 0.4), 0 2px 16px rgba(0, 0, 0, 0.98)",
+                  lineHeight: 1.44,
                   margin: 0,
                   opacity: 1,
                   animation: "galaxyTextFade 1.4s ease forwards",
@@ -1049,11 +1152,12 @@ export function MemoryGalaxyScene() {
                 style={{
                   fontFamily: "var(--font-serif)",
                   fontStyle: "italic",
-                  fontSize: "clamp(0.98rem, 2.6vw, 1.3rem)",
-                  color: "rgba(224, 186, 212, 0.94)",
-                  textShadow: "0 2px 16px rgba(0, 0, 0, 0.95)",
-                  lineHeight: 1.46,
-                  marginTop: "0.2rem",
+                  fontSize: "clamp(0.96rem, 2.5vw, 1.26rem)",
+                  color: "#F6D1E6",
+                  textShadow:
+                    "0 0 18px rgba(235, 165, 210, 0.6), 0 0 34px rgba(185, 117, 245, 0.35), 0 2px 14px rgba(0, 0, 0, 0.98)",
+                  lineHeight: 1.42,
+                  marginTop: "0.15rem",
                   marginBottom: 0,
                   opacity: 1,
                   animation: "galaxyTextFade 1.4s ease forwards",
@@ -1067,7 +1171,7 @@ export function MemoryGalaxyScene() {
             {finalMessageStep >= 5 && (
               <div
                 style={{
-                  marginTop: "0.35rem",
+                  marginTop: "0.28rem",
                   opacity: 1,
                   animation: "galaxyTextFade 1.5s ease forwards",
                 }}
@@ -1076,10 +1180,11 @@ export function MemoryGalaxyScene() {
                   style={{
                     fontFamily: "var(--font-serif)",
                     fontStyle: "italic",
-                    fontSize: "clamp(1.15rem, 3.2vw, 1.55rem)",
+                    fontSize: "clamp(1.15rem, 3.1vw, 1.5rem)",
                     letterSpacing: "0.08em",
-                    color: "rgba(245, 206, 134, 0.92)",
-                    textShadow: "0 0 16px rgba(233, 199, 125, 0.35)",
+                    color: "#FFE3A3",
+                    textShadow:
+                      "0 0 20px rgba(255, 215, 130, 0.72), 0 0 36px rgba(233, 199, 125, 0.42), 0 2px 12px rgba(0, 0, 0, 0.98)",
                   }}
                 >
                   — Umar
@@ -1087,8 +1192,8 @@ export function MemoryGalaxyScene() {
               </div>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Galaxy Controls */}
       <div
