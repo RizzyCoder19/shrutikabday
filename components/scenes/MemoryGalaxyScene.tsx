@@ -119,28 +119,30 @@ export function MemoryGalaxyScene() {
   const [webglError, setWebglError] = useState(false);
   const [selectedSrc, setSelectedSrc] = useState<string | null>(null);
   const [modalImgReady, setModalImgReady] = useState(false);
-  const [finalMessageStep, setFinalMessageStep] = useState<number>(0);
+  const [finalePhase, setFinalePhase] = useState<number>(0);
 
-  // Progressive final cinematic reveal pacing:
-  // Step 0: Galaxy establishes and settles freely with opening music (0-7s)
-  // Step 1: "And one last thing, Gheli..."
-  // Step 2: "You don't have to remember every little thing in here."
-  // Step 3: "Just remember that, somewhere, someone thought you were worth making an entire universe for."
-  // Step 4: "And I hope, whenever you look up at the stars, one of them makes you smile."
-  // Step 5: "— Umar"
+  // Unexpected Cinema Blackout Finale & Galaxy Restore Choreography:
+  // Phase 0 (0s - 17.5s): Pure Galaxy Exploration
+  // Phase 1 (17.5s): Screen goes all dark (theatre lights down)
+  // Phase 2 (19.0s): "And one last thing, Gheli..."
+  // Phase 3 (22.6s): "You don't have to remember every little thing in here."
+  // Phase 4 (26.8s): "Just remember that, somewhere, someone thought you were worth making an entire universe for."
+  // Phase 5 (32.2s): "And I hope, whenever you look up at the stars, one of them makes you smile."
+  // Phase 6 (36.6s): Sign-off "— Umar"
+  // Phase 7 (41.0s): Curtain & text dissolve smoothly, restoring the full glowing galaxy for continued exploration
   useEffect(() => {
-    const t1 = setTimeout(() => setFinalMessageStep(1), 7500);
-    const t2 = setTimeout(() => setFinalMessageStep(2), 11500);
-    const t3 = setTimeout(() => setFinalMessageStep(3), 16000);
-    const t4 = setTimeout(() => setFinalMessageStep(4), 21500);
-    const t5 = setTimeout(() => setFinalMessageStep(5), 26500);
+    const timers = [
+      setTimeout(() => setFinalePhase(1), 17500),
+      setTimeout(() => setFinalePhase(2), 19000),
+      setTimeout(() => setFinalePhase(3), 22600),
+      setTimeout(() => setFinalePhase(4), 26800),
+      setTimeout(() => setFinalePhase(5), 32200),
+      setTimeout(() => setFinalePhase(6), 36600),
+      setTimeout(() => setFinalePhase(7), 41000),
+    ];
 
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearTimeout(t4);
-      clearTimeout(t5);
+      timers.forEach(clearTimeout);
     };
   }, []);
 
@@ -1019,8 +1021,8 @@ export function MemoryGalaxyScene() {
         style={{ display: "block", width: "100%", height: "100%", touchAction: "none" }}
       />
 
-      {/* Initial Poetic Caption (Bottom, during galaxy immersion) */}
-      {finalMessageStep === 0 && (
+      {/* Poetic Exploration Caption (Visible during initial exploration & after galaxy restores) */}
+      {(finalePhase === 0 || finalePhase === 7) && (
         <div
           style={{
             position: "fixed",
@@ -1031,15 +1033,14 @@ export function MemoryGalaxyScene() {
             padding: "0 1.25rem",
             pointerEvents: "none",
             zIndex: 25,
-            transition: "opacity 1.2s ease",
-            opacity: 1,
+            animation: "galaxyCaptionIn 1.4s ease forwards",
           }}
         >
           <p
             style={{
               fontFamily: "var(--font-serif)",
               fontStyle: "italic",
-              fontSize: "clamp(1.1rem, 2.5vw, 1.55rem)",
+              fontSize: "clamp(1.08rem, 2.5vw, 1.5rem)",
               color: "rgba(255, 242, 228, 0.9)",
               textShadow: "0 0 18px rgba(233, 199, 125, 0.35), 0 2px 18px rgba(0, 0, 0, 0.95)",
             }}
@@ -1060,34 +1061,40 @@ export function MemoryGalaxyScene() {
         </div>
       )}
 
-      {/* Final Cinematic Glowing Message Overlay (Top of Screen after galaxy settles) */}
-      {finalMessageStep >= 1 && (
-        <div
-          style={{
-            position: "fixed",
-            top: "max(4.1rem, calc(var(--safe-top) + 3.3rem))",
-            left: 0,
-            right: 0,
-            textAlign: "center",
-            padding: "0.75rem 1.25rem 1.5rem",
-            background:
-              "radial-gradient(ellipse at top, rgba(4, 3, 12, 0.72) 0%, rgba(4, 3, 12, 0.36) 55%, transparent 85%)",
-            pointerEvents: "none",
-            zIndex: 25,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
+      {/* Unexpected Cinema Blackout & Large Glowing Finale Reveal (17.5s -> 41s, then restores galaxy) */}
+      <div
+        aria-live="polite"
+        style={{
+          position: "fixed",
+          inset: 0,
+          background:
+            "radial-gradient(circle at center, rgba(6, 4, 14, 0.95) 0%, rgba(1, 1, 5, 0.985) 100%)",
+          backdropFilter: finalePhase >= 1 && finalePhase < 7 ? "blur(6px)" : "blur(0px)",
+          WebkitBackdropFilter: finalePhase >= 1 && finalePhase < 7 ? "blur(6px)" : "blur(0px)",
+          opacity: finalePhase >= 1 && finalePhase < 7 ? 1 : 0,
+          transition:
+            finalePhase === 7
+              ? "opacity 1.8s cubic-bezier(0.22, 1, 0.36, 1)"
+              : "opacity 1.4s cubic-bezier(0.22, 1, 0.36, 1)",
+          pointerEvents: "none",
+          zIndex: 35,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "2rem 1.5rem",
+          textAlign: "center",
+        }}
+      >
+        {finalePhase >= 2 && (
           <div
             style={{
-              maxWidth: "min(92vw, 38rem)",
+              maxWidth: "min(92vw, 44rem)",
               width: "100%",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: "0.38rem",
-              pointerEvents: "none",
+              gap: "clamp(0.85rem, 2.4dvh, 1.45rem)",
             }}
           >
             {/* Beat 1: And one last thing, Gheli... */}
@@ -1095,32 +1102,32 @@ export function MemoryGalaxyScene() {
               style={{
                 fontFamily: "var(--font-serif)",
                 fontStyle: "italic",
-                fontSize: "clamp(1.18rem, 3.2vw, 1.62rem)",
-                color: "#FFF8EE",
+                fontSize: "clamp(1.55rem, 4.8vw, 2.65rem)",
+                fontWeight: 400,
+                color: "#FFF9F0",
                 textShadow:
-                  "0 0 18px rgba(255, 224, 165, 0.65), 0 0 36px rgba(233, 199, 125, 0.35), 0 2px 14px rgba(0, 0, 0, 0.98)",
-                lineHeight: 1.32,
+                  "0 0 22px rgba(255, 224, 165, 0.78), 0 0 48px rgba(233, 199, 125, 0.45), 0 4px 20px rgba(0, 0, 0, 0.95)",
+                lineHeight: 1.25,
                 margin: 0,
-                opacity: finalMessageStep >= 1 ? 1 : 0,
-                animation: "galaxyTextFade 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards",
+                animation: "galaxyUnexpectedReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards",
               }}
             >
               And one last thing, Gheli...
             </p>
 
             {/* Beat 2: You don't have to remember every little thing in here. */}
-            {finalMessageStep >= 2 && (
+            {finalePhase >= 3 && (
               <p
                 style={{
                   fontFamily: "var(--font-serif)",
-                  fontSize: "clamp(0.95rem, 2.4vw, 1.22rem)",
+                  fontSize: "clamp(1.22rem, 3.6vw, 1.9rem)",
+                  fontWeight: 300,
                   color: "#FFF4E6",
                   textShadow:
-                    "0 0 14px rgba(255, 240, 215, 0.45), 0 0 28px rgba(217, 166, 183, 0.28), 0 2px 14px rgba(0, 0, 0, 0.98)",
-                  lineHeight: 1.42,
+                    "0 0 18px rgba(255, 240, 215, 0.58), 0 0 38px rgba(217, 166, 183, 0.35), 0 3px 16px rgba(0, 0, 0, 0.95)",
+                  lineHeight: 1.4,
                   margin: 0,
-                  opacity: 1,
-                  animation: "galaxyTextFade 1.3s ease forwards",
+                  animation: "galaxyUnexpectedReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards",
                 }}
               >
                 You don&apos;t have to remember every little thing in here.
@@ -1128,18 +1135,18 @@ export function MemoryGalaxyScene() {
             )}
 
             {/* Beat 3: Just remember that, somewhere, someone thought you were worth making an entire universe for. */}
-            {finalMessageStep >= 3 && (
+            {finalePhase >= 4 && (
               <p
                 style={{
                   fontFamily: "var(--font-serif)",
-                  fontSize: "clamp(0.95rem, 2.45vw, 1.25rem)",
-                  color: "#FFE09E",
+                  fontSize: "clamp(1.26rem, 3.8vw, 2.05rem)",
+                  fontWeight: 400,
+                  color: "#FFE3A3",
                   textShadow:
-                    "0 0 18px rgba(255, 210, 120, 0.65), 0 0 38px rgba(233, 199, 125, 0.4), 0 2px 16px rgba(0, 0, 0, 0.98)",
-                  lineHeight: 1.44,
+                    "0 0 24px rgba(255, 212, 125, 0.8), 0 0 54px rgba(233, 199, 125, 0.48), 0 4px 18px rgba(0, 0, 0, 0.95)",
+                  lineHeight: 1.42,
                   margin: 0,
-                  opacity: 1,
-                  animation: "galaxyTextFade 1.4s ease forwards",
+                  animation: "galaxyUnexpectedReveal 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards",
                 }}
               >
                 Just remember that, somewhere, someone thought you were worth making an entire universe for.
@@ -1147,44 +1154,58 @@ export function MemoryGalaxyScene() {
             )}
 
             {/* Beat 4: And I hope, whenever you look up at the stars, one of them makes you smile. */}
-            {finalMessageStep >= 4 && (
+            {finalePhase >= 5 && (
               <p
                 style={{
                   fontFamily: "var(--font-serif)",
                   fontStyle: "italic",
-                  fontSize: "clamp(0.96rem, 2.5vw, 1.26rem)",
-                  color: "#F6D1E6",
+                  fontSize: "clamp(1.24rem, 3.7vw, 1.98rem)",
+                  fontWeight: 300,
+                  color: "#F8D4EA",
                   textShadow:
-                    "0 0 18px rgba(235, 165, 210, 0.6), 0 0 34px rgba(185, 117, 245, 0.35), 0 2px 14px rgba(0, 0, 0, 0.98)",
-                  lineHeight: 1.42,
-                  marginTop: "0.15rem",
+                    "0 0 22px rgba(235, 165, 210, 0.72), 0 0 46px rgba(185, 117, 245, 0.42), 0 3px 18px rgba(0, 0, 0, 0.95)",
+                  lineHeight: 1.4,
+                  marginTop: "0.2rem",
                   marginBottom: 0,
-                  opacity: 1,
-                  animation: "galaxyTextFade 1.4s ease forwards",
+                  animation: "galaxyUnexpectedReveal 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards",
                 }}
               >
                 And I hope, whenever you look up at the stars, one of them makes you smile.
               </p>
             )}
 
-            {/* Beat 5: Signature */}
-            {finalMessageStep >= 5 && (
+            {/* Beat 5: Glowing Sign-off */}
+            {finalePhase >= 6 && (
               <div
                 style={{
-                  marginTop: "0.28rem",
-                  opacity: 1,
-                  animation: "galaxyTextFade 1.5s ease forwards",
+                  marginTop: "0.65rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  animation: "galaxySignatureReveal 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards",
                 }}
               >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    fontSize: "1.05rem",
+                    color: "#FFE3A3",
+                    textShadow: "0 0 18px rgba(255, 215, 130, 0.85)",
+                    letterSpacing: "0.35em",
+                  }}
+                >
+                  ✦
+                </span>
                 <span
                   style={{
                     fontFamily: "var(--font-serif)",
                     fontStyle: "italic",
-                    fontSize: "clamp(1.15rem, 3.1vw, 1.5rem)",
-                    letterSpacing: "0.08em",
-                    color: "#FFE3A3",
+                    fontSize: "clamp(1.75rem, 5.4vw, 2.8rem)",
+                    letterSpacing: "0.1em",
+                    color: "#FFE7AE",
                     textShadow:
-                      "0 0 20px rgba(255, 215, 130, 0.72), 0 0 36px rgba(233, 199, 125, 0.42), 0 2px 12px rgba(0, 0, 0, 0.98)",
+                      "0 0 26px rgba(255, 215, 130, 0.9), 0 0 56px rgba(233, 199, 125, 0.55), 0 4px 18px rgba(0, 0, 0, 0.98)",
                   }}
                 >
                   — Umar
@@ -1192,8 +1213,8 @@ export function MemoryGalaxyScene() {
               </div>
             )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Galaxy Controls */}
       <div
@@ -1206,7 +1227,7 @@ export function MemoryGalaxyScene() {
           alignItems: "center",
           gap: "0.65rem",
           zIndex: 30,
-          opacity: finalMessageStep >= 1 ? 0.72 : 1,
+          opacity: finalePhase >= 1 && finalePhase < 7 ? 0.25 : 1,
           transition: "opacity 1.2s ease",
         }}
       >
@@ -1287,14 +1308,38 @@ export function MemoryGalaxyScene() {
       )}
 
       <style jsx>{`
-        @keyframes galaxyTextFade {
+        @keyframes galaxyCaptionIn {
           from {
             opacity: 0;
-            transform: translateY(6px);
+            transform: translateY(8px);
           }
           to {
             opacity: 1;
             transform: translateY(0);
+          }
+        }
+        @keyframes galaxyUnexpectedReveal {
+          0% {
+            opacity: 0;
+            transform: scale(1.06) translateY(10px);
+            filter: blur(10px);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            filter: blur(0px);
+          }
+        }
+        @keyframes galaxySignatureReveal {
+          0% {
+            opacity: 0;
+            transform: scale(0.88) translateY(12px);
+            filter: blur(8px);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            filter: blur(0px);
           }
         }
       `}</style>
