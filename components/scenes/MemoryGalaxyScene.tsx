@@ -75,10 +75,29 @@ function createStarGlowTexture(): THREE.CanvasTexture {
   cv.height = size;
   const c = cv.getContext("2d")!;
   const grad = c.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  // Crisp pinpoint astronomical star core with delicate exponential halo
   grad.addColorStop(0, "rgba(255, 255, 255, 1)");
-  grad.addColorStop(0.18, "rgba(255, 250, 240, 0.95)");
-  grad.addColorStop(0.38, "rgba(245, 218, 160, 0.65)");
-  grad.addColorStop(0.68, "rgba(215, 175, 220, 0.28)");
+  grad.addColorStop(0.08, "rgba(255, 252, 245, 0.92)");
+  grad.addColorStop(0.22, "rgba(245, 220, 175, 0.35)");
+  grad.addColorStop(0.55, "rgba(180, 165, 235, 0.06)");
+  grad.addColorStop(1, "rgba(0, 0, 0, 0)");
+  c.fillStyle = grad;
+  c.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function createNebulaGlowTexture(): THREE.CanvasTexture {
+  const size = 128;
+  const cv = document.createElement("canvas");
+  cv.width = size;
+  cv.height = size;
+  const c = cv.getContext("2d")!;
+  const grad = c.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  grad.addColorStop(0, "rgba(255, 246, 236, 0.38)");
+  grad.addColorStop(0.28, "rgba(225, 185, 245, 0.16)");
+  grad.addColorStop(0.62, "rgba(115, 145, 245, 0.05)");
   grad.addColorStop(1, "rgba(0, 0, 0, 0)");
   c.fillStyle = grad;
   c.fillRect(0, 0, size, size);
@@ -199,22 +218,24 @@ export function MemoryGalaxyScene() {
     controls.addEventListener("start", onControlStart);
     controls.addEventListener("end", onControlEnd);
 
-    // 1. Structured organic 3-arm spiral galaxy matching true cosmic physics
+    // 1. Milky Way barred-spiral galaxy with realistic pinpoint stars & volumetric dust glow
     const params = {
-      count: isMobile ? 32000 : 54000,
-      size: isMobile ? 0.024 : 0.018,
-      radius: 2.7,
-      branches: 3,
-      spin: 3.2,
-      randomness: 2.2,
-      randomnessPower: 3.8,
-      insideColor: "#FFF7EB",
-      midColor: "#F2C779",
-      roseColor: "#D188A6",
-      outsideColor: "#5B5299",
+      count: isMobile ? 36000 : 58000,
+      size: isMobile ? 0.017 : 0.013,
+      radius: 2.95,
+      branches: 4,
+      spin: 3.45,
+      randomness: 2.0,
+      randomnessPower: 3.6,
+      insideColor: "#FFFDF7",
+      midColor: "#F5CF86",
+      roseColor: "#DF97BF",
+      outsideColor: "#768AF2",
+      tipColor: "#BFD6FF",
     };
 
     const starGlowTex = createStarGlowTexture();
+    const nebulaGlowTex = createNebulaGlowTexture();
 
     const pointsGeo = new THREE.BufferGeometry();
     const positions = new Float32Array(params.count * 3);
@@ -223,34 +244,60 @@ export function MemoryGalaxyScene() {
     const colorMid = new THREE.Color(params.midColor);
     const colorRose = new THREE.Color(params.roseColor);
     const colorOutside = new THREE.Color(params.outsideColor);
+    const colorTip = new THREE.Color(params.tipColor);
 
+    const barAngle = 0.35;
     for (let i = 0; i < params.count; i++) {
       const i3 = i * 3;
-      // Exponential distribution giving true galactic core clustering with trailing thin arms
-      const isOuterHaloStar = i % 8 === 0;
-      const r = isOuterHaloStar
-        ? Math.pow(Math.random(), 1.1) * params.radius * 1.15
-        : Math.pow(Math.random(), 2.1) * params.radius;
-      const spinAngle = r * params.spin;
-      const branchAngle = ((i % params.branches) / params.branches) * Math.PI * 2;
-
       const neg = () => (Math.random() < 0.5 ? 1 : -1);
-      const randomX = Math.pow(Math.random(), params.randomnessPower) * neg() * params.randomness * (0.35 + r * 0.25);
-      const randomY = Math.pow(Math.random(), params.randomnessPower) * neg() * (0.12 + Math.exp(-r * 2.2) * 0.45);
-      const randomZ = Math.pow(Math.random(), params.randomnessPower) * neg() * params.randomness * (0.35 + r * 0.25);
+
+      // ~12% of stars form the Milky Way's central galactic bar feeding the spiral arms
+      if (i % 8 === 0) {
+        const barAlong = (Math.random() - 0.5) * 1.05;
+        const barAcross = Math.pow(Math.random(), 2.2) * neg() * 0.22;
+        const cosB = Math.cos(barAngle);
+        const sinB = Math.sin(barAngle);
+        positions[i3] = barAlong * cosB - barAcross * sinB;
+        positions[i3 + 1] = Math.pow(Math.random(), 2.8) * neg() * 0.16;
+        positions[i3 + 2] = barAlong * sinB + barAcross * cosB;
+
+        const barMix = colorInside.clone().lerp(colorMid, Math.min(1, Math.abs(barAlong) / 0.55));
+        colors[i3] = barMix.r;
+        colors[i3 + 1] = barMix.g;
+        colors[i3 + 2] = barMix.b;
+        continue;
+      }
+
+      // Exponential core clustering + luminous outer trailing fragments
+      const isOuterFragment = i % 5 === 0;
+      const r = isOuterFragment
+        ? (0.55 + Math.pow(Math.random(), 0.9) * 0.6) * params.radius
+        : Math.pow(Math.random(), 2.0) * params.radius;
+      const spinAngle = r * params.spin;
+      const branchIndex = i % params.branches;
+      // 2 major arms + 2 slightly offset secondary arms like the Milky Way
+      const branchAngle = (branchIndex / params.branches) * Math.PI * 2 + barAngle;
+
+      const armSpread = 0.28 + r * 0.24;
+      const randomX = Math.pow(Math.random(), params.randomnessPower) * neg() * params.randomness * armSpread;
+      const randomY = Math.pow(Math.random(), params.randomnessPower) * neg() * (0.1 + Math.exp(-r * 2.0) * 0.42);
+      const randomZ = Math.pow(Math.random(), params.randomnessPower) * neg() * params.randomness * armSpread;
 
       positions[i3] = Math.cos(branchAngle + spinAngle) * r + randomX;
       positions[i3 + 1] = randomY;
       positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * r + randomZ;
 
-      const t = r / params.radius;
+      const t = Math.min(1.15, r / params.radius);
       const mixed = colorInside.clone();
-      if (t < 0.2) {
-        mixed.lerp(colorMid, t / 0.2);
-      } else if (t < 0.55) {
-        mixed.copy(colorMid).lerp(colorRose, (t - 0.2) / 0.35);
+      if (t < 0.18) {
+        mixed.lerp(colorMid, t / 0.18);
+      } else if (t < 0.48) {
+        mixed.copy(colorMid).lerp(colorRose, (t - 0.18) / 0.3);
+      } else if (t < 0.78) {
+        mixed.copy(colorRose).lerp(colorOutside, (t - 0.48) / 0.3);
       } else {
-        mixed.copy(colorRose).lerp(colorOutside, Math.min(1, (t - 0.55) / 0.45));
+        // Outermost fragment glows with luminous ice-blue/periwinkle starlight
+        mixed.copy(colorOutside).lerp(colorTip, Math.min(1, (t - 0.78) / 0.35));
       }
 
       colors[i3] = mixed.r;
@@ -264,13 +311,8 @@ export function MemoryGalaxyScene() {
     const galaxyRoot = new THREE.Group();
     scene.add(galaxyRoot);
 
-    const baseStarSize = params.size;
-    const baseCoreSize = isMobile ? 0.058 : 0.046;
-    const baseCoreOpacity = 0.65;
-    const baseFov = 72;
-
     const pointsMat = new THREE.PointsMaterial({
-      size: baseStarSize,
+      size: params.size,
       map: starGlowTex,
       sizeAttenuation: true,
       depthWrite: false,
@@ -283,20 +325,63 @@ export function MemoryGalaxyScene() {
     const starPoints = new THREE.Points(pointsGeo, pointsMat);
     galaxyRoot.add(starPoints);
 
+    // Milky Way luminous nebula band & outer-fragment glow clouds
+    const nebulaCount = isMobile ? 1600 : 2800;
+    const nebulaGeo = new THREE.BufferGeometry();
+    const nebulaPos = new Float32Array(nebulaCount * 3);
+    const nebulaCol = new Float32Array(nebulaCount * 3);
+    for (let i = 0; i < nebulaCount; i++) {
+      const i3 = i * 3;
+      const neg = () => (Math.random() < 0.5 ? 1 : -1);
+      // Span from inner arms all the way into the outermost trailing fragment so tips glow
+      const r = (0.18 + Math.pow(Math.random(), 0.95) * 0.96) * params.radius;
+      const spinAngle = r * params.spin;
+      const branchAngle = ((i % params.branches) / params.branches) * Math.PI * 2 + barAngle;
+      const scatter = 0.18 + r * 0.12;
+
+      nebulaPos[i3] = Math.cos(branchAngle + spinAngle) * r + (Math.random() - 0.5) * scatter;
+      nebulaPos[i3 + 1] = Math.pow(Math.random(), 2.2) * neg() * 0.14;
+      nebulaPos[i3 + 2] = Math.sin(branchAngle + spinAngle) * r + (Math.random() - 0.5) * scatter;
+
+      const t = r / params.radius;
+      const nc = t < 0.45
+        ? colorMid.clone().lerp(colorRose, t / 0.45)
+        : t < 0.8
+          ? colorRose.clone().lerp(colorOutside, (t - 0.45) / 0.35)
+          : colorOutside.clone().lerp(colorTip, Math.min(1, (t - 0.8) / 0.34));
+      nebulaCol[i3] = nc.r;
+      nebulaCol[i3 + 1] = nc.g;
+      nebulaCol[i3 + 2] = nc.b;
+    }
+    nebulaGeo.setAttribute("position", new THREE.BufferAttribute(nebulaPos, 3));
+    nebulaGeo.setAttribute("color", new THREE.BufferAttribute(nebulaCol, 3));
+    const nebulaMat = new THREE.PointsMaterial({
+      size: isMobile ? 0.22 : 0.18,
+      map: nebulaGlowTex,
+      sizeAttenuation: true,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.085,
+      blending: THREE.AdditiveBlending,
+      vertexColors: true,
+    });
+    const nebulaPoints = new THREE.Points(nebulaGeo, nebulaMat);
+    galaxyRoot.add(nebulaPoints);
+
     // Highly dense, luminous warm galactic core bulge
     const coreGeo = new THREE.BufferGeometry();
-    const coreCount = isMobile ? 1200 : 2400;
+    const coreCount = isMobile ? 1400 : 2600;
     const corePos = new Float32Array(coreCount * 3);
     const coreCol = new Float32Array(coreCount * 3);
     for (let i = 0; i < coreCount; i++) {
       const i3 = i * 3;
-      const rr = Math.pow(Math.random(), 2.8) * 0.68;
+      const rr = Math.pow(Math.random(), 2.6) * 0.74;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
       corePos[i3] = Math.sin(phi) * Math.cos(theta) * rr;
       corePos[i3 + 1] = Math.cos(phi) * rr * 0.42;
       corePos[i3 + 2] = Math.sin(phi) * Math.sin(theta) * rr;
-      const c = colorInside.clone().lerp(colorMid, Math.min(1, rr / 0.68));
+      const c = colorInside.clone().lerp(colorMid, Math.min(1, rr / 0.74));
       coreCol[i3] = c.r;
       coreCol[i3 + 1] = c.g;
       coreCol[i3 + 2] = c.b;
@@ -304,17 +389,57 @@ export function MemoryGalaxyScene() {
     coreGeo.setAttribute("position", new THREE.BufferAttribute(corePos, 3));
     coreGeo.setAttribute("color", new THREE.BufferAttribute(coreCol, 3));
     const coreMat = new THREE.PointsMaterial({
-      size: baseCoreSize,
+      size: isMobile ? 0.036 : 0.028,
       map: starGlowTex,
       sizeAttenuation: true,
       depthWrite: false,
       transparent: true,
-      opacity: baseCoreOpacity,
+      opacity: 0.56,
       blending: THREE.AdditiveBlending,
       vertexColors: true,
     });
     const corePoints = new THREE.Points(coreGeo, coreMat);
     galaxyRoot.add(corePoints);
+
+    // Soft central galactic core bloom halo
+    const coreHaloMat = new THREE.SpriteMaterial({
+      map: nebulaGlowTex,
+      color: new THREE.Color("#FFE8C2"),
+      transparent: true,
+      opacity: 0.3,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    const coreHaloSprite = new THREE.Sprite(coreHaloMat);
+    coreHaloSprite.scale.set(1.45, 0.98, 1);
+    galaxyRoot.add(coreHaloSprite);
+
+    // Distant deep-space background starfield
+    const bgCount = isMobile ? 550 : 1000;
+    const bgGeo = new THREE.BufferGeometry();
+    const bgPos = new Float32Array(bgCount * 3);
+    for (let i = 0; i < bgCount; i++) {
+      const i3 = i * 3;
+      const rBg = 9 + Math.random() * 18;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      bgPos[i3] = rBg * Math.sin(phi) * Math.cos(theta);
+      bgPos[i3 + 1] = rBg * Math.cos(phi);
+      bgPos[i3 + 2] = rBg * Math.sin(phi) * Math.sin(theta);
+    }
+    bgGeo.setAttribute("position", new THREE.BufferAttribute(bgPos, 3));
+    const bgMat = new THREE.PointsMaterial({
+      size: isMobile ? 0.045 : 0.035,
+      map: starGlowTex,
+      color: new THREE.Color("#E8EEFF"),
+      sizeAttenuation: true,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.48,
+      blending: THREE.AdditiveBlending,
+    });
+    const bgStars = new THREE.Points(bgGeo, bgMat);
+    scene.add(bgStars);
 
     // 2. Luminous miniature celestial photo planets embedded across all 3 spiral arms
     // Each planet uses spherical curvature projection, limb darkening, atmospheric Fresnel rim lighting,
@@ -682,49 +807,6 @@ export function MemoryGalaxyScene() {
       const dt = Math.min((now - prevTime) / 1000, 0.05);
       prevTime = now;
 
-      // ─── Beat-Synchronized Pulse & Zoom In/Out Matching "Haa Tu Hai" ───
-      // Song tempo ~83.1 BPM:
-      // Hook phrase cycle is 2 beats = 1.444s; individual beat is 0.722s
-      const endingTime = musicCueManager.getCurrentTime();
-      const isSongPlaying = musicCueManager.isEndingPlaying();
-      const songT = isSongPlaying && endingTime >= 0 ? endingTime : now * 0.001;
-
-      const BEAT_SEC = 0.722;
-      const HOOK_PHRASE_SEC = 1.444; // 2-beat vocal hook motif ("Haan tu hai...")
-
-      // 1. Hook vocal swell ("Haan tu hai..."): smooth oceanic breathing cycle
-      const hookPhase = (songT / HOOK_PHRASE_SEC) % 1.0;
-      const hookSwell = Math.pow(Math.sin(hookPhase * Math.PI), 1.6);
-
-      // 2. Rhythmic beat punch on every downbeat (0.722s period)
-      const beatPhase = (songT / BEAT_SEC) % 1.0;
-      const beatPunch = Math.pow(Math.max(0, 1 - beatPhase * 1.8), 2.2);
-
-      // Master zoom in and out pulse (peaks on the hook beat, breathes gently back)
-      // Total zoom in and out pulse reaches ~14% amplitude for a rich, breathing universe
-      const rawPulse = hookSwell * 0.095 + beatPunch * 0.045;
-      const activePulse = (reducedMotion || selectedOpen || focusAnim.active) ? 0 : rawPulse;
-
-      // Pulse the entire galaxy (stars, spiral arms, core, and photo planets)
-      const zoomScale = 1.0 + activePulse;
-      galaxyRoot.scale.set(zoomScale, zoomScale, zoomScale);
-
-      // Cinematic camera lens zoom breathing (FOV expands and contracts with the beat)
-      if (!reducedMotion && !selectedOpen && !focusAnim.active) {
-        camera.fov = baseFov - activePulse * 4.2;
-        camera.updateProjectionMatrix();
-      } else if (camera.fov !== baseFov && !focusAnim.active) {
-        camera.fov = baseFov;
-        camera.updateProjectionMatrix();
-      }
-
-      // Dynamic central galactic core pulse (throbbing heart of the universe)
-      coreMat.size = baseCoreSize * (1.0 + hookSwell * 0.42 + beatPunch * 0.25);
-      coreMat.opacity = Math.min(0.95, baseCoreOpacity * (1.0 + beatPunch * 0.3 + hookSwell * 0.18));
-
-      // Star particle size shimmer
-      pointsMat.size = baseStarSize * (1.0 + hookSwell * 0.22 + beatPunch * 0.16);
-
       if (focusAnim.active) {
         focusAnim.elapsed += dt;
         const p = Math.min(1, focusAnim.elapsed / focusAnim.duration);
@@ -749,21 +831,16 @@ export function MemoryGalaxyScene() {
       }
 
       if (!reducedMotion && !userInteracting && !focusAnim.active && !selectedOpen) {
-        // Serene cosmic spiral drift resembling a true living galaxy
-        const rotSpeed = 0.048 * dt;
+        // Serene cosmic spiral drift resembling a true living Milky Way
+        const rotSpeed = 0.045 * dt;
         galaxyRoot.rotation.y += rotSpeed;
+        bgStars.rotation.y += rotSpeed * 0.15;
 
         const tSec = now * 0.001;
-        for (let i = 0; i < spriteObjects.length; i++) {
+        for (let i = 0; i < spriteObjects.length; i += 4) {
           const item = spriteObjects[i];
-          if (i % 3 === 0) {
-            item.sprite.position.y =
-              item.baseY + Math.sin(tSec * item.pulseSpeed * 0.65 + item.bobPhase) * 0.008;
-          }
-          // Photo planets zoom pulse in sync with the hook!
-          const planetPulse = 1.0 + hookSwell * 0.14 + beatPunch * 0.09;
-          const s = item.baseScale * planetPulse;
-          item.sprite.scale.set(s, s, 1);
+          item.sprite.position.y =
+            item.baseY + Math.sin(tSec * item.pulseSpeed * 0.55 + item.bobPhase) * 0.007;
         }
       }
 
@@ -791,9 +868,15 @@ export function MemoryGalaxyScene() {
       controls.dispose();
       pointsGeo.dispose();
       pointsMat.dispose();
+      nebulaGeo.dispose();
+      nebulaMat.dispose();
       coreGeo.dispose();
       coreMat.dispose();
+      coreHaloMat.dispose();
+      bgGeo.dispose();
+      bgMat.dispose();
       starGlowTex.dispose();
+      nebulaGlowTex.dispose();
       createdMaterials.forEach((m) => m.dispose());
       createdTextures.forEach((t) => t.dispose());
       renderer.dispose();
