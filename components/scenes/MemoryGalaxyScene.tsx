@@ -106,6 +106,54 @@ function createNebulaGlowTexture(): THREE.CanvasTexture {
   return tex;
 }
 
+function SelfWritingLine({
+  text,
+  charStepMs = 48,
+}: {
+  text: string;
+  charStepMs?: number;
+}) {
+  const words = text.split(" ");
+  let runningIdx = 0;
+
+  return (
+    <>
+      {words.map((word, wIdx) => {
+        const chars = word.split("");
+        const wordNode = (
+          <span key={`${word}-${wIdx}`} style={{ display: "inline-block", whiteSpace: "nowrap" }}>
+            {chars.map((ch, cIdx) => {
+              const delayMs = runningIdx * charStepMs;
+              runningIdx++;
+              return (
+                <span
+                  key={`${wIdx}-${cIdx}`}
+                  style={{
+                    display: "inline-block",
+                    opacity: 0,
+                    animation: "galaxyCharWrite 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards",
+                    animationDelay: `${delayMs}ms`,
+                  }}
+                >
+                  {ch}
+                </span>
+              );
+            })}
+          </span>
+        );
+        // Account for the space between words in the writing rhythm
+        runningIdx++;
+        return (
+          <React.Fragment key={`frag-${wIdx}`}>
+            {wordNode}
+            {wIdx < words.length - 1 ? " " : null}
+          </React.Fragment>
+        );
+      })}
+    </>
+  );
+}
+
 export function MemoryGalaxyScene() {
   const reset = useExperienceStore((s) => s.reset);
   const soundEnabled = useExperienceStore((s) => s.soundEnabled);
@@ -122,23 +170,23 @@ export function MemoryGalaxyScene() {
   const [finalePhase, setFinalePhase] = useState<number>(0);
 
   // Unexpected Cinema Blackout Finale & Galaxy Restore Choreography:
-  // Phase 0 (0s - 17.5s): Pure Galaxy Exploration
-  // Phase 1 (17.5s): Screen goes all dark (theatre lights down)
-  // Phase 2 (19.0s): "And one last thing, Gheli..."
-  // Phase 3 (22.6s): "You don't have to remember every little thing in here."
-  // Phase 4 (26.8s): "Just remember that, somewhere, someone thought you were worth making an entire universe for."
-  // Phase 5 (32.2s): "And I hope, whenever you look up at the stars, one of them makes you smile."
-  // Phase 6 (36.6s): Sign-off "— Umar"
-  // Phase 7 (41.0s): Curtain & text dissolve smoothly, restoring the full glowing galaxy for continued exploration
+  // Phase 0 (0s - 24.8s): Pure Galaxy Exploration
+  // Phase 1 (24.8s): Screen goes all dark (theatre lights down)
+  // Phase 2 (26.0s): "And one last thing, Gheli..." (self-writing)
+  // Phase 3 (29.2s): "You don't have to remember every little thing in here." (self-writing)
+  // Phase 4 (33.8s): "Just remember that, somewhere, someone thought you were worth making an entire universe for." (self-writing)
+  // Phase 5 (40.4s): "And I hope, whenever you look up at the stars, one of them makes you smile." (self-writing)
+  // Phase 6 (45.4s): Sign-off "— Umar" (self-writing)
+  // Phase 7 (49.0s = 26s + 23s): Curtain & text dissolve smoothly, restoring the full glowing galaxy
   useEffect(() => {
     const timers = [
-      setTimeout(() => setFinalePhase(1), 17500),
-      setTimeout(() => setFinalePhase(2), 19000),
-      setTimeout(() => setFinalePhase(3), 22600),
-      setTimeout(() => setFinalePhase(4), 26800),
-      setTimeout(() => setFinalePhase(5), 32200),
-      setTimeout(() => setFinalePhase(6), 36600),
-      setTimeout(() => setFinalePhase(7), 41000),
+      setTimeout(() => setFinalePhase(1), 24800),
+      setTimeout(() => setFinalePhase(2), 26000),
+      setTimeout(() => setFinalePhase(3), 29200),
+      setTimeout(() => setFinalePhase(4), 33800),
+      setTimeout(() => setFinalePhase(5), 40400),
+      setTimeout(() => setFinalePhase(6), 45400),
+      setTimeout(() => setFinalePhase(7), 49000),
     ];
 
     return () => {
@@ -1021,7 +1069,7 @@ export function MemoryGalaxyScene() {
         style={{ display: "block", width: "100%", height: "100%", touchAction: "none" }}
       />
 
-      {/* Poetic Exploration Caption (Visible during initial exploration & after galaxy restores) */}
+        {/* Poetic Exploration Caption (Visible during initial exploration & after galaxy restores) */ }
       {(finalePhase === 0 || finalePhase === 7) && (
         <div
           style={{
@@ -1061,160 +1109,165 @@ export function MemoryGalaxyScene() {
         </div>
       )}
 
-      {/* Unexpected Cinema Blackout & Large Glowing Finale Reveal (17.5s -> 41s, then restores galaxy) */}
-      <div
-        aria-live="polite"
-        style={{
-          position: "fixed",
-          inset: 0,
-          background:
-            "radial-gradient(circle at center, rgba(6, 4, 14, 0.95) 0%, rgba(1, 1, 5, 0.985) 100%)",
-          backdropFilter: finalePhase >= 1 && finalePhase < 7 ? "blur(6px)" : "blur(0px)",
-          WebkitBackdropFilter: finalePhase >= 1 && finalePhase < 7 ? "blur(6px)" : "blur(0px)",
-          opacity: finalePhase >= 1 && finalePhase < 7 ? 1 : 0,
-          transition:
-            finalePhase === 7
-              ? "opacity 1.8s cubic-bezier(0.22, 1, 0.36, 1)"
-              : "opacity 1.4s cubic-bezier(0.22, 1, 0.36, 1)",
-          pointerEvents: "none",
-          zIndex: 35,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "2rem 1.5rem",
-          textAlign: "center",
-        }}
-      >
-        {finalePhase >= 2 && (
+          {/* Unexpected Cinema Blackout & Large Glowing Finale Reveal (17.5s -> 41s, then restores galaxy) */}
           <div
+            aria-live="polite"
             style={{
-              maxWidth: "min(92vw, 44rem)",
-              width: "100%",
+              position: "fixed",
+              inset: 0,
+              background:
+                "radial-gradient(circle at center, rgba(6, 4, 14, 0.95) 0%, rgba(1, 1, 5, 0.985) 100%)",
+              backdropFilter: finalePhase >= 1 && finalePhase < 7 ? "blur(6px)" : "blur(0px)",
+              WebkitBackdropFilter: finalePhase >= 1 && finalePhase < 7 ? "blur(6px)" : "blur(0px)",
+              opacity: finalePhase >= 1 && finalePhase < 7 ? 1 : 0,
+              transition:
+                finalePhase === 7
+                  ? "opacity 1.8s cubic-bezier(0.22, 1, 0.36, 1)"
+                  : "opacity 1.4s cubic-bezier(0.22, 1, 0.36, 1)",
+              pointerEvents: "none",
+              zIndex: 35,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: "clamp(0.85rem, 2.4dvh, 1.45rem)",
+              justifyContent: "center",
+              padding: "2rem 1.5rem",
+              textAlign: "center",
             }}
           >
-            {/* Beat 1: And one last thing, Gheli... */}
-            <p
-              style={{
-                fontFamily: "var(--font-serif)",
-                fontStyle: "italic",
-                fontSize: "clamp(1.55rem, 4.8vw, 2.65rem)",
-                fontWeight: 400,
-                color: "#FFF9F0",
-                textShadow:
-                  "0 0 22px rgba(255, 224, 165, 0.78), 0 0 48px rgba(233, 199, 125, 0.45), 0 4px 20px rgba(0, 0, 0, 0.95)",
-                lineHeight: 1.25,
-                margin: 0,
-                animation: "galaxyUnexpectedReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-              }}
-            >
-              And one last thing, Gheli...
-            </p>
-
-            {/* Beat 2: You don't have to remember every little thing in here. */}
-            {finalePhase >= 3 && (
-              <p
-                style={{
-                  fontFamily: "var(--font-serif)",
-                  fontSize: "clamp(1.22rem, 3.6vw, 1.9rem)",
-                  fontWeight: 300,
-                  color: "#FFF4E6",
-                  textShadow:
-                    "0 0 18px rgba(255, 240, 215, 0.58), 0 0 38px rgba(217, 166, 183, 0.35), 0 3px 16px rgba(0, 0, 0, 0.95)",
-                  lineHeight: 1.4,
-                  margin: 0,
-                  animation: "galaxyUnexpectedReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-                }}
-              >
-                You don&apos;t have to remember every little thing in here.
-              </p>
-            )}
-
-            {/* Beat 3: Just remember that, somewhere, someone thought you were worth making an entire universe for. */}
-            {finalePhase >= 4 && (
-              <p
-                style={{
-                  fontFamily: "var(--font-serif)",
-                  fontSize: "clamp(1.26rem, 3.8vw, 2.05rem)",
-                  fontWeight: 400,
-                  color: "#FFE3A3",
-                  textShadow:
-                    "0 0 24px rgba(255, 212, 125, 0.8), 0 0 54px rgba(233, 199, 125, 0.48), 0 4px 18px rgba(0, 0, 0, 0.95)",
-                  lineHeight: 1.42,
-                  margin: 0,
-                  animation: "galaxyUnexpectedReveal 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-                }}
-              >
-                Just remember that, somewhere, someone thought you were worth making an entire universe for.
-              </p>
-            )}
-
-            {/* Beat 4: And I hope, whenever you look up at the stars, one of them makes you smile. */}
-            {finalePhase >= 5 && (
-              <p
-                style={{
-                  fontFamily: "var(--font-serif)",
-                  fontStyle: "italic",
-                  fontSize: "clamp(1.24rem, 3.7vw, 1.98rem)",
-                  fontWeight: 300,
-                  color: "#F8D4EA",
-                  textShadow:
-                    "0 0 22px rgba(235, 165, 210, 0.72), 0 0 46px rgba(185, 117, 245, 0.42), 0 3px 18px rgba(0, 0, 0, 0.95)",
-                  lineHeight: 1.4,
-                  marginTop: "0.2rem",
-                  marginBottom: 0,
-                  animation: "galaxyUnexpectedReveal 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-                }}
-              >
-                And I hope, whenever you look up at the stars, one of them makes you smile.
-              </p>
-            )}
-
-            {/* Beat 5: Glowing Sign-off */}
-            {finalePhase >= 6 && (
+            {finalePhase >= 2 && (
               <div
                 style={{
-                  marginTop: "0.65rem",
+                  maxWidth: "min(92vw, 44rem)",
+                  width: "100%",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
-                  gap: "0.35rem",
-                  animation: "galaxySignatureReveal 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+                  gap: "clamp(0.85rem, 2.4dvh, 1.45rem)",
                 }}
               >
-                <span
-                  aria-hidden="true"
-                  style={{
-                    fontSize: "1.05rem",
-                    color: "#FFE3A3",
-                    textShadow: "0 0 18px rgba(255, 215, 130, 0.85)",
-                    letterSpacing: "0.35em",
-                  }}
-                >
-                  ✦
-                </span>
-                <span
+                {/* Beat 1: And one last thing, Gheli... */}
+                <p
                   style={{
                     fontFamily: "var(--font-serif)",
                     fontStyle: "italic",
-                    fontSize: "clamp(1.75rem, 5.4vw, 2.8rem)",
-                    letterSpacing: "0.1em",
-                    color: "#FFE7AE",
+                    fontSize: "clamp(1.55rem, 4.8vw, 2.65rem)",
+                    fontWeight: 400,
+                    color: "#FFF9F0",
                     textShadow:
-                      "0 0 26px rgba(255, 215, 130, 0.9), 0 0 56px rgba(233, 199, 125, 0.55), 0 4px 18px rgba(0, 0, 0, 0.98)",
+                      "0 0 22px rgba(255, 224, 165, 0.78), 0 0 48px rgba(233, 199, 125, 0.45), 0 4px 20px rgba(0, 0, 0, 0.95)",
+                    lineHeight: 1.25,
+                    margin: 0,
                   }}
                 >
-                  — Umar
-                </span>
+                  <SelfWritingLine text="And one last thing, Gheli..." charStepMs={55} />
+                </p>
+
+                {/* Beat 2: You don't have to remember every little thing in here. */}
+                {finalePhase >= 3 && (
+                  <p
+                    style={{
+                      fontFamily: "var(--font-serif)",
+                      fontSize: "clamp(1.22rem, 3.6vw, 1.9rem)",
+                      fontWeight: 300,
+                      color: "#FFF4E6",
+                      textShadow:
+                        "0 0 18px rgba(255, 240, 215, 0.58), 0 0 38px rgba(217, 166, 183, 0.35), 0 3px 16px rgba(0, 0, 0, 0.95)",
+                      lineHeight: 1.4,
+                      margin: 0,
+                    }}
+                  >
+                    <SelfWritingLine
+                      text="You don't have to remember every little thing in here."
+                      charStepMs={50}
+                    />
+                  </p>
+                )}
+
+                {/* Beat 3: Just remember that, somewhere, someone thought you were worth making an entire universe for. */}
+                {finalePhase >= 4 && (
+                  <p
+                    style={{
+                      fontFamily: "var(--font-serif)",
+                      fontSize: "clamp(1.26rem, 3.8vw, 2.05rem)",
+                      fontWeight: 400,
+                      color: "#FFE3A3",
+                      textShadow:
+                        "0 0 24px rgba(255, 212, 125, 0.8), 0 0 54px rgba(233, 199, 125, 0.48), 0 4px 18px rgba(0, 0, 0, 0.95)",
+                      lineHeight: 1.42,
+                      margin: 0,
+                    }}
+                  >
+                    <SelfWritingLine
+                      text="Just remember that, somewhere, someone thought you were worth making an entire universe for."
+                      charStepMs={46}
+                    />
+                  </p>
+                )}
+
+                {/* Beat 4: And I hope, whenever you look up at the stars, one of them makes you smile. */}
+                {finalePhase >= 5 && (
+                  <p
+                    style={{
+                      fontFamily: "var(--font-serif)",
+                      fontStyle: "italic",
+                      fontSize: "clamp(1.24rem, 3.7vw, 1.98rem)",
+                      fontWeight: 300,
+                      color: "#F8D4EA",
+                      textShadow:
+                        "0 0 22px rgba(235, 165, 210, 0.72), 0 0 46px rgba(185, 117, 245, 0.42), 0 3px 18px rgba(0, 0, 0, 0.95)",
+                      lineHeight: 1.4,
+                      marginTop: "0.2rem",
+                      marginBottom: 0,
+                    }}
+                  >
+                    <SelfWritingLine
+                      text="And I hope, whenever you look up at the stars, one of them makes you smile."
+                      charStepMs={46}
+                    />
+                  </p>
+                )}
+
+                {/* Beat 5: Glowing Sign-off */}
+                {finalePhase >= 6 && (
+                  <div
+                    style={{
+                      marginTop: "0.65rem",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: "0.35rem",
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        fontSize: "1.05rem",
+                        color: "#FFE3A3",
+                        textShadow: "0 0 18px rgba(255, 215, 130, 0.85)",
+                        letterSpacing: "0.35em",
+                        animation: "galaxySignatureReveal 0.9s ease forwards",
+                      }}
+                    >
+                      ✦
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-serif)",
+                        fontStyle: "italic",
+                        fontSize: "clamp(1.75rem, 5.4vw, 2.8rem)",
+                        letterSpacing: "0.1em",
+                        color: "#FFE7AE",
+                        textShadow:
+                          "0 0 26px rgba(255, 215, 130, 0.9), 0 0 56px rgba(233, 199, 125, 0.55), 0 4px 18px rgba(0, 0, 0, 0.98)",
+                      }}
+                    >
+                      <SelfWritingLine text="— Umar" charStepMs={115} />
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
         )}
-      </div>
+        </div>
 
       {/* Galaxy Controls */}
       <div
@@ -1318,15 +1371,20 @@ export function MemoryGalaxyScene() {
             transform: translateY(0);
           }
         }
-        @keyframes galaxyUnexpectedReveal {
+        @keyframes galaxyCharWrite {
           0% {
             opacity: 0;
-            transform: scale(1.06) translateY(10px);
-            filter: blur(10px);
+            transform: translateY(6px) scale(0.92);
+            filter: blur(5px);
+          }
+          65% {
+            opacity: 1;
+            transform: translateY(-1px) scale(1.03);
+            filter: blur(0px);
           }
           100% {
             opacity: 1;
-            transform: scale(1) translateY(0);
+            transform: translateY(0) scale(1);
             filter: blur(0px);
           }
         }
