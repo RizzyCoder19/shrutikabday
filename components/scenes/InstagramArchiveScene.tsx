@@ -55,9 +55,9 @@ export function InstagramArchiveScene() {
       else if (beat === "MOMENT_PRE_CHAT_PAUSE") setBeat("MOMENT_CHAT");
     };
 
-    // Beat A: pure clean blank canvas settle before Beat B storytelling title
+    // Beat A: brief clean blank canvas settle before Beat B storytelling title
     if (beat === "MOMENT_BLANK") {
-      const blankTimer = setTimeout(advanceBeat, 520);
+      const blankTimer = setTimeout(advanceBeat, 220);
       return () => clearTimeout(blankTimer);
     }
 
@@ -100,7 +100,7 @@ export function InstagramArchiveScene() {
 
     const tl = gsap.timeline({ onComplete: advanceBeat });
     tl.set(wrapEl, { opacity: 1, y: 0, clearProps: "filter,transform" });
-    tl.to({}, { duration: 0.28 });
+    tl.to({}, { duration: 0.06 });
 
     lines.forEach((lineEl, idx) => {
       tl.fromTo(

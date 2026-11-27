@@ -1,0 +1,495 @@
+/* Chapter 03 — GHELI: A Living Typographic Portrait & GHELI -> SHRUTI Particle Transformation */
+
+.gheli-stage-root {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 88% 70% at 50% 42%, #24152b 0%, #160e21 48%, #100c18 78%, #07050d 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: max(3.6rem, calc(var(--safe-top) + 2.4rem)) 1.25rem max(2.2rem, calc(var(--safe-bottom) + 1.4rem));
+  text-align: center;
+  overflow-y: auto;
+  overflow-x: hidden;
+  isolation: isolate;
+}
+
+/* Soft theatrical overhead spotlight */
+.gheli-spotlight {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(ellipse 56% 50% at 50% 44%, rgba(233, 199, 125, 0.085) 0%, rgba(217, 166, 183, 0.03) 44%, transparent 74%),
+    radial-gradient(ellipse 30% 58% at 50% 16%, rgba(243, 217, 201, 0.05) 0%, transparent 70%);
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+
+/* Portrait camouflaged as a dark-plum double-exposure behind SHRUTI */
+.gheli-portrait-veil {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  overflow: hidden;
+  will-change: opacity;
+}
+
+.gheli-portrait-img {
+  width: 100vw;
+  height: 100dvh;
+  object-fit: cover;
+  object-position: 47% 28%;
+  filter: saturate(0.44) contrast(1.26) brightness(0.9) blur(0.4px);
+  mix-blend-mode: screen;
+  opacity: 0.42;
+  -webkit-mask-image: radial-gradient(ellipse 46% 58% at 50% 42%,
+      rgba(0, 0, 0, 1) 18%,
+      rgba(0, 0, 0, 0.82) 38%,
+      rgba(0, 0, 0, 0.38) 60%,
+      rgba(0, 0, 0, 0.08) 78%,
+      transparent 94%);
+  mask-image: radial-gradient(ellipse 46% 58% at 50% 42%,
+      rgba(0, 0, 0, 1) 18%,
+      rgba(0, 0, 0, 0.82) 38%,
+      rgba(0, 0, 0, 0.38) 60%,
+      rgba(0, 0, 0, 0.08) 78%,
+      transparent 94%);
+}
+
+/* Soft outer plum vignette (leaves facial center open so face stays recognizable) */
+.gheli-portrait-grade {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 48% 52% at 50% 42%,
+      rgba(36, 21, 43, 0.05) 0%,
+      rgba(22, 13, 30, 0.42) 56%,
+      rgba(13, 9, 20, 0.84) 84%,
+      #100c18 100%);
+}
+
+/* Gentle non-synchronized light veil drifting across portrait */
+.gheli-portrait-drift {
+  position: absolute;
+  inset: -6%;
+  background: radial-gradient(ellipse 38% 36% at 50% 40%,
+      rgba(233, 199, 125, 0.08) 0%,
+      rgba(198, 139, 158, 0.045) 45%,
+      transparent 78%);
+  mix-blend-mode: soft-light;
+  opacity: 0.45;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.gheli-portrait-veil.is-ambient-live .gheli-portrait-img {
+  animation: portraitEmergeBreathe 10.8s ease-in-out infinite;
+}
+
+.gheli-portrait-drift.is-ambient-live {
+  animation: portraitLightDrift 13.4s ease-in-out infinite alternate;
+}
+
+/* Calm editorial typography hierarchy */
+.gheli-calm-lead {
+  font-family: var(--font-serif);
+  font-size: clamp(1.2rem, 2.3vw, 1.62rem);
+  font-weight: 400;
+  line-height: 1.56;
+  max-width: 45rem;
+  letter-spacing: 0.015em;
+  color: #f5ece0;
+  text-shadow: 0 0 18px rgba(245, 236, 224, 0.14), 0 2px 12px rgba(6, 3, 12, 0.85);
+}
+
+.gheli-lead-phrase {
+  display: block;
+  opacity: 0;
+}
+
+.gheli-calm-traits {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(1.16rem, 2.25vw, 1.56rem);
+  letter-spacing: 0.025em;
+  line-height: 1.48;
+  color: #f3e9d9;
+  text-shadow: 0 0 18px rgba(233, 199, 125, 0.18), 0 2px 12px rgba(6, 3, 12, 0.88);
+}
+
+.gheli-calm-closing {
+  font-family: var(--font-serif);
+  font-size: clamp(1rem, 1.75vw, 1.2rem);
+  font-weight: 400;
+  letter-spacing: 0.07em;
+  color: #e9c77d;
+  text-shadow: 0 0 18px rgba(233, 199, 125, 0.24), 0 2px 12px rgba(6, 3, 12, 0.9);
+}
+
+/* Editorial Wordmark Stage (single strict horizontal baseline) */
+.gheli-botanical-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(94vw, 48rem);
+  min-height: clamp(112px, 16vw, 170px);
+  padding: clamp(0.75rem, 2vh, 1.35rem) 0;
+}
+
+/* Soft contrast halo behind SHRUTI so wordmark always commands the foreground */
+.gheli-wordmark-backdrop {
+  position: absolute;
+  inset: 8% 12%;
+  border-radius: 9999px;
+  background: radial-gradient(ellipse 62% 58% at 50% 50%,
+      rgba(16, 12, 24, 0.56) 0%,
+      rgba(16, 12, 24, 0.22) 55%,
+      transparent 82%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.gheli-sculpture-row {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: clamp(0.32rem, 1.5vw, 0.95rem);
+  padding: 0.35rem 0.6rem;
+  z-index: 4;
+}
+
+.shruti-sculpture-row {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.24rem, 1.15vw, 0.78rem);
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.gheli-letter-btn {
+  position: relative;
+  background: none;
+  border: none;
+  min-width: 44px;
+  min-height: 48px;
+  padding: 0.1rem 0.08rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  will-change: transform, opacity;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  opacity: 0;
+}
+
+.gheli-letter-btn:focus-visible {
+  outline: 1.5px solid rgba(233, 199, 125, 0.72);
+  outline-offset: 6px;
+  border-radius: 6px;
+}
+
+.gheli-letter-body,
+.shruti-letter-body {
+  position: relative;
+  display: inline-block;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  text-transform: uppercase;
+  font-feature-settings: "kern" 1, "liga" 0;
+  line-height: 0.92;
+  letter-spacing: 0;
+  vertical-align: baseline;
+}
+
+.gheli-letter-body {
+  font-size: clamp(3.3rem, 9.8vw, 6.8rem);
+}
+
+.shruti-letter-body {
+  font-size: clamp(3.15rem, 9.2vw, 6.45rem);
+  opacity: 0;
+}
+
+/* Custom editorial warm ivory & subtle champagne surface lighting */
+.gheli-letter-face {
+  position: relative;
+  display: inline-block;
+  background: linear-gradient(172deg,
+      #fbf5ec 0%,
+      #efe2ce 56%,
+      #dcc7a8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter:
+    drop-shadow(0 1px 0 rgba(255, 250, 240, 0.16)) drop-shadow(0 12px 26px rgba(8, 4, 14, 0.72)) drop-shadow(0 0 18px rgba(233, 199, 125, 0.16));
+  transition: filter 0.35s ease;
+}
+
+/* Subtle champagne sheen on hover / periodic quiet sweep on SHRUTI */
+.gheli-letter-sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(112deg,
+      transparent 0%,
+      rgba(255, 248, 232, 0.85) 45%,
+      rgba(233, 199, 125, 0.45) 55%,
+      transparent 100%);
+  background-size: 230% 100%;
+  background-position: 145% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.gheli-letter-btn:hover .gheli-letter-sheen,
+.gheli-letter-btn:focus-visible .gheli-letter-sheen,
+.gheli-letter-btn[data-active="true"] .gheli-letter-sheen {
+  opacity: 0.75;
+  background-position: 50% 0;
+}
+
+.gheli-letter-btn:hover .gheli-letter-face,
+.gheli-letter-btn[data-active="true"] .gheli-letter-face {
+  filter:
+    drop-shadow(0 1px 0 rgba(255, 250, 240, 0.25)) drop-shadow(0 12px 26px rgba(8, 4, 14, 0.74)) drop-shadow(0 0 24px rgba(233, 199, 125, 0.28));
+}
+
+/* Restrained warm ripple on letter tap */
+.gheli-letter-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 64px;
+  height: 64px;
+  margin-left: -32px;
+  margin-top: -32px;
+  border-radius: 9999px;
+  border: 1px solid rgba(233, 199, 125, 0.45);
+  box-shadow: 0 0 14px rgba(233, 199, 125, 0.2);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Minimal asymmetric botanical accent framing outside wordmark bounds */
+.gheli-botanical-svg {
+  position: absolute;
+  inset: -14% -6%;
+  width: 112%;
+  height: 128%;
+  pointer-events: none;
+  z-index: 3;
+  overflow: visible;
+}
+
+@keyframes gheliLightSweep {
+  0% {
+    opacity: 0;
+    background-position: 150% 0;
+  }
+
+  22% {
+    opacity: 0.82;
+  }
+
+  78% {
+    opacity: 0.75;
+  }
+
+  100% {
+    opacity: 0;
+    background-position: -60% 0;
+  }
+}
+
+.shruti-light-sweep {
+  animation: gheliLightSweep 2.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Continuous living ambient state (prime-like staggered periods so layers feel organic) */
+@keyframes shrutiInnerBreath {
+
+  0%,
+  100% {
+    filter:
+      drop-shadow(0 1px 0 rgba(255, 250, 240, 0.16)) drop-shadow(0 12px 26px rgba(8, 4, 14, 0.72)) drop-shadow(0 0 16px rgba(233, 199, 125, 0.15));
+  }
+
+  50% {
+    filter:
+      drop-shadow(0 1px 0 rgba(255, 250, 240, 0.24)) drop-shadow(0 14px 28px rgba(8, 4, 14, 0.76)) drop-shadow(0 0 26px rgba(233, 199, 125, 0.27));
+  }
+}
+
+@keyframes gheliLightSweepPeriodic {
+
+  0%,
+  72% {
+    opacity: 0;
+    background-position: 150% 0;
+  }
+
+  81% {
+    opacity: 0.62;
+  }
+
+  92% {
+    opacity: 0.48;
+  }
+
+  100% {
+    opacity: 0;
+    background-position: -60% 0;
+  }
+}
+
+@keyframes portraitEmergeBreathe {
+
+  0%,
+  100% {
+    opacity: 0.38;
+  }
+
+  50% {
+    opacity: 0.47;
+  }
+}
+
+@keyframes portraitLightDrift {
+  0% {
+    transform: translate3d(-2.2%, -1.4%, 0) scale(1);
+    opacity: 0.36;
+  }
+
+  50% {
+    transform: translate3d(2%, 1%, 0) scale(1.04);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: translate3d(-0.8%, 1.8%, 0) scale(1.01);
+    opacity: 0.44;
+  }
+}
+
+@keyframes botanicalSwayA {
+
+  0%,
+  100% {
+    transform: rotate(0deg) translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: rotate(1.1deg) translate3d(0.8px, -1px, 0);
+  }
+}
+
+@keyframes botanicalSwayB {
+
+  0%,
+  100% {
+    transform: rotate(0deg) translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: rotate(-1.2deg) translate3d(-0.8px, 1px, 0);
+  }
+}
+
+.shruti-ambient-live .gheli-letter-face {
+  animation: shrutiInnerBreath 7.3s ease-in-out infinite;
+}
+
+.shruti-ambient-live .gheli-letter-sheen {
+  animation: gheliLightSweepPeriodic 11.7s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.gheli-botanical-sway-left {
+  transform-box: fill-box;
+  transform-origin: 18% 82%;
+  animation: botanicalSwayA 8.1s ease-in-out infinite;
+}
+
+.gheli-botanical-sway-right {
+  transform-box: fill-box;
+  transform-origin: 84% 72%;
+  animation: botanicalSwayB 9.7s ease-in-out infinite;
+}
+
+@media (max-width: 520px) {
+  .gheli-sculpture-row {
+    gap: 0.24rem;
+    padding: 0.25rem;
+  }
+
+  .shruti-sculpture-row {
+    gap: 0.18rem;
+  }
+
+  .gheli-letter-body {
+    font-size: clamp(2.65rem, 12.6vw, 3.6rem);
+  }
+
+  .shruti-letter-body {
+    font-size: clamp(2.35rem, 11.4vw, 3.25rem);
+  }
+
+  .gheli-botanical-svg {
+    inset: -16% -2%;
+    width: 104%;
+    height: 132%;
+  }
+
+  .gheli-portrait-img {
+    width: 100vw;
+    height: 100dvh;
+    object-position: 48% 30%;
+    -webkit-mask-image: radial-gradient(ellipse 78% 54% at 50% 41%,
+        rgba(0, 0, 0, 1) 18%,
+        rgba(0, 0, 0, 0.82) 40%,
+        rgba(0, 0, 0, 0.36) 62%,
+        rgba(0, 0, 0, 0.08) 80%,
+        transparent 95%);
+    mask-image: radial-gradient(ellipse 78% 54% at 50% 41%,
+        rgba(0, 0, 0, 1) 18%,
+        rgba(0, 0, 0, 0.82) 40%,
+        rgba(0, 0, 0, 0.36) 62%,
+        rgba(0, 0, 0, 0.08) 80%,
+        transparent 95%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gheli-spotlight {
+    opacity: 0.85 !important;
+  }
+
+  .shruti-ambient-live .gheli-letter-face,
+  .shruti-ambient-live .gheli-letter-sheen,
+  .gheli-portrait-veil.is-ambient-live .gheli-portrait-img,
+  .gheli-portrait-drift.is-ambient-live,
+  .gheli-botanical-sway-left,
+  .gheli-botanical-sway-right {
+    animation: none !important;
+  }
+}

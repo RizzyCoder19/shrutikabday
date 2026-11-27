@@ -31,31 +31,32 @@ export function TwoYearsAgoScene() {
     const tl = gsap.timeline();
     tl.fromTo(
       headingRef.current,
-      { opacity: 0, y: 16 },
-      { opacity: 1, y: 0, duration: 1.0, ease: "power2.out" }
+      { opacity: 0, y: 10 },
+      { opacity: 1, y: 0, duration: 0.55, ease: "power2.out" }
     )
       .fromTo(
         lineRef.current,
         { scaleX: 0 },
-        { scaleX: 1, duration: 1.3, ease: "power2.inOut" },
-        "-=0.3"
+        { scaleX: 1, duration: 0.85, ease: "power2.inOut" },
+        "-=0.25"
       )
       .fromTo(
         date2024Ref.current,
-        { opacity: 0, y: 12 },
-        { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" },
-        "-=0.9"
+        { opacity: 0, y: 10 },
+        { opacity: 1, y: 0, duration: 0.55, ease: "power2.out" },
+        "-=0.55"
       )
       .fromTo(
         date2026Ref.current,
-        { opacity: 0, y: 12 },
-        { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" },
-        "-=0.3"
+        { opacity: 0, y: 10 },
+        { opacity: 1, y: 0, duration: 0.55, ease: "power2.out" },
+        "-=0.2"
       )
       .fromTo(
         btnRef.current,
-        { opacity: 0, y: 10 },
-        { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" }
+        { opacity: 0, y: 8 },
+        { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" },
+        "-=0.15"
       );
 
     return () => {
