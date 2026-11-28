@@ -101,7 +101,7 @@
 
 .fg-sky-narrative {
   position: fixed;
-  top: max(4.3rem, calc(var(--safe-top) + 3.4rem));
+  top: max(3.9rem, calc(var(--safe-top) + 3.1rem));
   left: 0;
   right: 0;
   z-index: 35;
@@ -112,29 +112,29 @@
 
 .fg-sky-line1 {
   font-family: var(--font-serif);
-  font-size: clamp(1.3rem, 2.8vw, 2.05rem);
+  font-size: clamp(1.24rem, 2.55vw, 1.9rem);
   font-weight: 300;
   color: rgba(255, 242, 228, 0.94);
-  text-shadow: 0 2px 22px rgba(0, 0, 0, 0.92), 0 0 26px rgba(20, 8, 22, 0.85);
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.94), 0 0 26px rgba(10, 14, 24, 0.9);
   opacity: 0;
 }
 
 .fg-sky-line2 {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: clamp(1.55rem, 3.4vw, 2.48rem);
+  font-size: clamp(1.45rem, 3.05vw, 2.28rem);
   font-weight: 400;
   color: #f5dccb;
-  margin-top: 0.25rem;
-  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.94), 0 0 24px rgba(255, 77, 109, 0.22);
+  margin-top: 0.2rem;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.96), 0 0 22px rgba(56, 206, 174, 0.16);
   opacity: 0;
 }
 
 .fg-sky-whisper {
-  font-size: clamp(0.76rem, 1.3vw, 0.9rem);
+  font-size: clamp(0.74rem, 1.25vw, 0.88rem);
   color: rgba(233, 199, 125, 0.84);
   letter-spacing: 0.08em;
-  margin-top: 0.5rem;
+  margin-top: 0.45rem;
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.95);
   opacity: 0;
 }

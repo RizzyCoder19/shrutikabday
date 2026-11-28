@@ -13,11 +13,11 @@ export const BIRTHDAY_LETTER: {
   sections: [
     {
       type: "greeting",
-      text: "Shruti,",
+      text: "Gheli",
     },
     {
       type: "paragraph",
-      text: "Two years ago, it started with one simple birthday reply — and you asking right away who I was.",
+      text: "Two years ago, it started with one simple birthday reply..nd you asking right away who I was.",
     },
     {
       type: "highlight",

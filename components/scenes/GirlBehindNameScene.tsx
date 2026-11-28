@@ -5,6 +5,12 @@ import gsap from "gsap";
 import { useExperienceStore } from "@/state/experience-store";
 import { GIRL_BEHIND_NAME_CONTENT } from "@/content/appreciation";
 import { audioSynth } from "@/lib/audio/audio-synthesizer";
+import {
+  CRIMSON_PALETTES,
+  drawArticulatedCrimsonFlower,
+  drawRealisticButterfly,
+  easeOutCubic,
+} from "@/lib/botanical/crimson-blossom";
 import { ArrowRight } from "lucide-react";
 import "./girl-behind-name.css";
 
@@ -194,6 +200,7 @@ export function GirlBehindNameScene() {
   const portraitVeilRef = useRef<HTMLDivElement>(null);
   const particleCanvasRef = useRef<HTMLCanvasElement>(null);
 
+  const leadWrapRef = useRef<HTMLParagraphElement>(null);
   const leadPhraseRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const prefixRef = useRef<HTMLSpanElement>(null);
   const hintRef = useRef<HTMLSpanElement>(null);
@@ -231,6 +238,8 @@ export function GirlBehindNameScene() {
   const morphDriverRef = useRef({ progress: 0, active: false });
   const morphParticlesRef = useRef<MorphParticle[]>([]);
   const morphMetricsRef = useRef<MorphStageMetrics | null>(null);
+  // Subtle Chapter 3 -> Chapter 6 crimson botanical whisper (activates only after SHRUTI & portrait lock)
+  const botanicalConnectRef = useRef({ active: false, elapsed: 0 });
 
   // ─── 1. Single Atmospheric Dust & Morph Particle Canvas ───
   useEffect(() => {
@@ -303,8 +312,26 @@ export function GirlBehindNameScene() {
       };
     };
 
+    const driftingPetals = Array.from({ length: 4 }, (_, idx) => ({
+      side: idx % 2 === 0 ? -1 : 1,
+      xOffsetFrac: 0.06 + (idx * 0.03),
+      yStart: h * (0.28 + idx * 0.16),
+      speedY: -(0.18 + idx * 0.04),
+      driftPhase: idx * 1.7,
+      rotSpeed: (idx % 2 === 0 ? 1 : -1) * 0.45,
+      size: 4.8 + idx * 0.6,
+    }));
+
+    let lastNow = performance.now();
     let rafId = 0;
-    const render = () => {
+    const render = (now: number) => {
+      const dt = Math.min((now - lastNow) / 1000, 0.25);
+      lastNow = now;
+      if (document.hidden) {
+        rafId = requestAnimationFrame(render);
+        return;
+      }
+
       ctx.clearRect(0, 0, w, h);
 
       // Quiet ambient dust motes
@@ -485,6 +512,92 @@ export function GirlBehindNameScene() {
         }
       }
 
+      // Subtle Chapter 3 Botanical Connection: single restrained crimson blossom + drifting petals + quiet butterfly
+      const bot = botanicalConnectRef.current;
+      if (bot.active) {
+        bot.elapsed += dt;
+        const bt = bot.elapsed;
+        const mobile = w < 520;
+
+        // 1. Single restrained crimson blossom tucked along the outer lower-left margin
+        const rootX = mobile ? Math.max(28, w * 0.1) : Math.max(58, w * 0.125);
+        const rootY = h + 10;
+        const headX = rootX + (mobile ? 12 : 24) + Math.sin(bt * 0.72) * 2.4;
+        const headY = mobile ? h * 0.85 : h * 0.77;
+        const ctrlX = rootX - (mobile ? 6 : 12);
+        const ctrlY = (rootY + headY) * 0.52;
+
+        const stemProg = easeOutCubic(bt / 1.15);
+        const bloomProg = bt > 0.78 ? Math.min(1, (bt - 0.78) / 2.2) : 0;
+
+        drawArticulatedCrimsonFlower(ctx, {
+          rootX,
+          rootY,
+          headX,
+          headY,
+          ctrlX,
+          ctrlY,
+          stemProgress: stemProg,
+          bloomProgress: bloomProg,
+          petalRadius: mobile ? 21 : 28,
+          depth: 0.78,
+          headTilt: 0.2,
+          perspectiveY: 0.85,
+          swayOffsetPx: Math.sin(bt * 0.72) * 2.4,
+          palette: CRIMSON_PALETTES.crimson,
+          rimLight: 0.16,
+          scaleFactor: mobile ? 0.68 : 0.88,
+          alpha: 0.86,
+        });
+
+        // 2. Few quiet drifting crimson petals along outer margins (never over SHRUTI or face)
+        if (bt > 1.2) {
+          const petalAlpha = Math.min(0.54, (bt - 1.2) * 0.28);
+          for (const dp of driftingPetals) {
+            const age = bt - 1.2;
+            const py = ((dp.yStart + age * dp.speedY * 22) % (h + 40) + h + 40) % (h + 40) - 20;
+            const px =
+              (dp.side < 0 ? w * dp.xOffsetFrac : w * (1 - dp.xOffsetFrac)) +
+              Math.sin(age * 0.65 + dp.driftPhase) * 14;
+            ctx.save();
+            ctx.translate(px, py);
+            ctx.rotate(age * dp.rotSpeed + dp.driftPhase);
+            ctx.globalAlpha = petalAlpha;
+            ctx.fillStyle = "#d41242";
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(-dp.size, -dp.size * 0.6, -dp.size * 0.6, -dp.size * 1.6, 0, -dp.size * 1.9);
+            ctx.bezierCurveTo(dp.size * 0.7, -dp.size * 1.5, dp.size * 0.9, -dp.size * 0.5, 0, 0);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+
+        // 3. One quiet distant butterfly gliding lazily once past upper-left outer backdrop
+        if (bt > 1.5 && bt < 16.5) {
+          const flyU = (bt - 1.5) / 15.0;
+          const bAlpha = Math.sin(flyU * Math.PI) * 0.56;
+          const bx = w * (-0.04 + flyU * 0.34);
+          const by = h * (0.36 - Math.sin(flyU * Math.PI * 1.4) * 0.14);
+          const beatRaw = Math.sin(bt * 6.8);
+          const flapOpen = beatRaw >= 0 ? Math.pow(beatRaw, 0.78) : 0.16 + 0.12 * (1 + beatRaw);
+
+          drawRealisticButterfly(ctx, {
+            x: bx,
+            y: by,
+            headingRad: 0.78 - Math.cos(flyU * Math.PI * 1.4) * 0.25,
+            scale: mobile ? 0.42 : 0.54,
+            flapOpen,
+            alpha: bAlpha,
+            wingLight: "#f4cbd6",
+            wingMid: "#c96280",
+            wingDeep: "#63142e",
+            wingEdge: "#1c0912",
+            wingDot: "#fff0f4",
+          });
+        }
+      }
+
       ctx.globalAlpha = 1;
       rafId = requestAnimationFrame(render);
     };
@@ -521,6 +634,7 @@ export function GirlBehindNameScene() {
       transformLockedRef.current = true;
       setIsTransforming(true);
       if (spotlightRef.current) gsap.set(spotlightRef.current, { opacity: 0.9 });
+      if (leadWrapRef.current) gsap.set(leadWrapRef.current, { opacity: 0 });
       leadPhraseRefs.current.forEach((el) => el && gsap.set(el, { opacity: 1, y: 0 }));
       if (prefixRef.current) gsap.set(prefixRef.current, { opacity: 1, y: 0 });
       [clusterLeftRef.current, clusterRightRef.current].forEach(
@@ -556,43 +670,58 @@ export function GirlBehindNameScene() {
 
     // Initial clean deterministic state (mutate in-place so GSAP targets stay bound)
     const morphDriver = morphDriverRef.current;
+    const botConnect = botanicalConnectRef.current;
     morphDriver.progress = 0;
     morphDriver.active = false;
+    botConnect.active = false;
+    botConnect.elapsed = 0;
     morphParticlesRef.current = [];
     morphMetricsRef.current = null;
 
     const tl = gsap.timeline();
 
-    // ACT I — BRIEF ATMOSPHERIC PAUSE & SLOW, DELIBERATE OPENING SENTENCE (~5.8s paced phrasing)
+    // ACT I — ATMOSPHERIC PAUSE, SLOW GALAXY-STYLE PHRASE REVEAL & CLEAN FADEOUT BEFORE G H E L I
     if (spotlightRef.current) {
       tl.fromTo(
         spotlightRef.current,
         { opacity: 0 },
-        { opacity: 1, duration: 1.8, ease: "power1.out" },
+        { opacity: 1, duration: 2.0, ease: "power1.out" },
         0
       );
     }
 
-    // Wait 0.85s after mount before first phrase begins emerging
-    tl.to({}, { duration: 0.85 }, 0);
+    // Brief atmospheric stillness after scene entrance before the first phrase emerges
+    tl.to({}, { duration: 1.1 }, 0);
 
     leadPhraseRefs.current.forEach((phraseEl, idx) => {
       if (!phraseEl) return;
       tl.fromTo(
         phraseEl,
-        { opacity: 0, y: 10 },
+        { opacity: 0, y: 12 },
         {
           opacity: 1,
           y: 0,
-          duration: 1.25,
+          duration: 1.45,
           ease: "power2.out",
         },
-        idx === 0 ? 0.85 : "+=0.55"
+        idx === 0 ? 1.1 : "+=0.75"
       );
     });
 
-    // Calm breathing hold after full sentence is read
-    tl.to({}, { duration: 0.9 });
+    // Unhurried reading hold before gently clearing the intro text
+    tl.to({}, { duration: 1.7 });
+
+    if (leadWrapRef.current) {
+      tl.to(leadWrapRef.current, {
+        opacity: 0,
+        y: -8,
+        duration: 1.15,
+        ease: "power2.inOut",
+      });
+    }
+
+    // Quiet breath after intro fades away, before "But that's" + G H E L I arrive
+    tl.to({}, { duration: 0.45 });
 
     // ACT II — "But that's" + G H E L I EDITORIAL WORDMARK ARRIVAL
     tl.fromTo(
@@ -856,11 +985,15 @@ export function GirlBehindNameScene() {
       )
       .call(() => {
         setAmbientLive(true);
+        botConnect.active = true;
+        botConnect.elapsed = 0;
       });
 
     return () => {
       morphDriver.progress = 0;
       morphDriver.active = false;
+      botConnect.active = false;
+      botConnect.elapsed = 0;
       morphParticlesRef.current = [];
       morphMetricsRef.current = null;
       gheliBodies.forEach((b) => {
@@ -1078,7 +1211,7 @@ export function GirlBehindNameScene() {
 
       <div style={containerStyle}>
         {/* ACT I — Slow, Deliberate Short-Film Opening Sentence */}
-        <p className="gheli-calm-lead">
+        <p ref={leadWrapRef} className="gheli-calm-lead">
           {LEAD_PHRASES.map((phrase, idx) => (
             <span
               key={phrase}

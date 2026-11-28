@@ -106,51 +106,90 @@ function createNebulaGlowTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-function SelfWritingLine({
+function CosmicPhraseLine({
   text,
-  charStepMs = 48,
+  delayMs = 0,
+  reducedMotion = false,
 }: {
   text: string;
-  charStepMs?: number;
+  delayMs?: number;
+  reducedMotion?: boolean;
 }) {
-  const words = text.split(" ");
-  let runningIdx = 0;
+  if (reducedMotion) {
+    return <span>{text}</span>;
+  }
 
   return (
-    <>
-      {words.map((word, wIdx) => {
-        const chars = word.split("");
-        const wordNode = (
-          <span key={`${word}-${wIdx}`} style={{ display: "inline-block", whiteSpace: "nowrap" }}>
-            {chars.map((ch, cIdx) => {
-              const delayMs = runningIdx * charStepMs;
-              runningIdx++;
-              return (
-                <span
-                  key={`${wIdx}-${cIdx}`}
-                  style={{
-                    display: "inline-block",
-                    opacity: 0,
-                    animation: "galaxyCharWrite 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards",
-                    animationDelay: `${delayMs}ms`,
-                  }}
-                >
-                  {ch}
-                </span>
-              );
-            })}
-          </span>
-        );
-        // Account for the space between words in the writing rhythm
-        runningIdx++;
-        return (
-          <React.Fragment key={`frag-${wIdx}`}>
-            {wordNode}
-            {wIdx < words.length - 1 ? " " : null}
-          </React.Fragment>
-        );
-      })}
-    </>
+    <span
+      style={{
+        display: "inline-block",
+        opacity: 0,
+        animation: "galaxyPhraseRise 1.35s cubic-bezier(0.22, 1, 0.36, 1) forwards",
+        animationDelay: `${delayMs}ms`,
+        willChange: "opacity, transform",
+      }}
+    >
+      {text}
+    </span>
+  );
+}
+
+function UmarSignatureSvg({ reducedMotion = false }: { reducedMotion?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 280 96"
+      role="img"
+      aria-label="— Umar"
+      style={{
+        width: "clamp(150px, 34vw, 235px)",
+        height: "auto",
+        overflow: "visible",
+        filter: "drop-shadow(0 0 12px rgba(255, 215, 130, 0.55))",
+      }}
+    >
+      <defs>
+        <linearGradient id="umarInkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#FFE9B5" />
+          <stop offset="55%" stopColor="#FFD47C" />
+          <stop offset="100%" stopColor="#FFF2D6" />
+        </linearGradient>
+      </defs>
+      {/* Continuous connected handwritten "Umar" stroke path */}
+      <path
+        d="M 24 24 C 21 52, 22 71, 41 73 C 58 75, 67 48, 72 24 C 70 46, 68 65, 72 71 C 76 75, 85 57, 94 51 C 101 46, 105 57, 103 69 C 107 58, 116 48, 123 51 C 129 54, 127 66, 126 71 C 131 61, 140 50, 148 51 C 154 52, 152 67, 158 70 C 164 72, 173 55, 181 50 C 187 46, 194 50, 191 61 C 188 71, 174 73, 172 64 C 171 55, 183 47, 190 52 C 193 55, 191 68, 198 70 C 204 71, 213 55, 219 46 C 221 43, 220 65, 220 71 C 220 61, 222 49, 232 49 C 238 49, 236 66, 244 69 C 251 71, 260 63, 268 57"
+        fill="none"
+        stroke="url(#umarInkGrad)"
+        strokeWidth="3.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={
+          reducedMotion
+            ? undefined
+            : {
+              strokeDasharray: 720,
+              strokeDashoffset: 720,
+              animation: "umarSignatureDraw 2.15s cubic-bezier(0.32, 0.04, 0.24, 1) forwards",
+            }
+        }
+      />
+      {/* Delicate final ink sweep underline */}
+      <path
+        d="M 104 82 C 148 77, 198 76, 250 79"
+        fill="none"
+        stroke="rgba(255, 226, 158, 0.72)"
+        strokeWidth="1.65"
+        strokeLinecap="round"
+        style={
+          reducedMotion
+            ? undefined
+            : {
+              strokeDasharray: 160,
+              strokeDashoffset: 160,
+              animation: "umarSweepDraw 0.85s ease-out 1.55s forwards",
+            }
+        }
+      />
+    </svg>
   );
 }
 
@@ -167,30 +206,96 @@ export function MemoryGalaxyScene() {
   const [webglError, setWebglError] = useState(false);
   const [selectedSrc, setSelectedSrc] = useState<string | null>(null);
   const [modalImgReady, setModalImgReady] = useState(false);
+  const [reducedMotionUI, setReducedMotionUI] = useState(false);
   const [finalePhase, setFinalePhase] = useState<number>(0);
+  const [finaleCycle, setFinaleCycle] = useState<number>(0);
+  const selectedSrcRef = useRef<string | null>(null);
+  selectedSrcRef.current = selectedSrc;
 
-  // Unexpected Cinema Blackout Finale & Galaxy Restore Choreography:
-  // Phase 0 (0s - 24.8s): Pure Galaxy Exploration
-  // Phase 1 (24.8s): Screen goes all dark (theatre lights down)
-  // Phase 2 (26.0s): "And one last thing, Gheli..." (self-writing)
-  // Phase 3 (29.2s): "You don't have to remember every little thing in here." (self-writing)
-  // Phase 4 (33.8s): "Just remember that, somewhere, someone thought you were worth making an entire universe for." (self-writing)
-  // Phase 5 (40.4s): "And I hope, whenever you look up at the stars, one of them makes you smile." (self-writing)
-  // Phase 6 (45.4s): Sign-off "— Umar" (self-writing)
-  // Phase 7 (49.0s = 26s + 23s): Curtain & text dissolve smoothly, restoring the full glowing galaxy
+  // Continuous optical blur + dim driver synced directly to the single monotonic cycle clock (no extra timers)
+  const finaleVisualRef = useRef<{ blurMix: number }>({ blurMix: 0 });
+
+  // Milky Way Cinema Finale & Repeatable 23-Second Text Cycle (zero WebGL reset/teardown):
+  // - 0s -> 24.8s: Pure unobstructed bright Milky Way exploration
+  // - 24.8s (inCycle = 0ms): Background gradually darkens & softens via GPU blur
+  // - 26.0s (inCycle = 1200ms): Beat 1 -> Beat 4 -> Umar SVG signature (45.4s, finishes ~47.55s)
+  // - 48.2s (inCycle = 23400ms, 0.8s earlier than prior 49.0s): Text fades cleanly to 0 over 1.0s
+  // - 48.6s -> 50.4s: Darkened/blurred galaxy restores smoothly to full brightness & sharpness
+  // - Continues breathing unobstructed until next 46s cycle boundary (23s window + 23s unobstructed galaxy)
   useEffect(() => {
-    const timers = [
-      setTimeout(() => setFinalePhase(1), 24800),
-      setTimeout(() => setFinalePhase(2), 26000),
-      setTimeout(() => setFinalePhase(3), 29200),
-      setTimeout(() => setFinalePhase(4), 33800),
-      setTimeout(() => setFinalePhase(5), 40400),
-      setTimeout(() => setFinalePhase(6), 45400),
-      setTimeout(() => setFinalePhase(7), 49000),
-    ];
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotionUI(mq.matches);
+    const onMq = (e: MediaQueryListEvent) => setReducedMotionUI(e.matches);
+    mq.addEventListener("change", onMq);
+
+    let elapsedMs = 0;
+    let lastTick = performance.now();
+    let prevPhase = 0;
+    let prevCycle = 0;
+
+    const smoothstep01 = (t: number) => {
+      const x = t < 0 ? 0 : t > 1 ? 1 : t;
+      return x * x * (3 - 2 * x);
+    };
+
+    const timer = window.setInterval(() => {
+      const now = performance.now();
+      const dt = Math.min(250, now - lastTick);
+      lastTick = now;
+
+      if (document.hidden || selectedSrcRef.current !== null) return;
+      elapsedMs += dt;
+
+      let nextPhase = 0;
+      let nextCycle = 0;
+      let blurMix = 0;
+
+      if (elapsedMs < 24800) {
+        nextPhase = 0;
+        blurMix = 0;
+      } else {
+        const cycleDur = 46000;
+        const postStart = elapsedMs - 24800;
+        nextCycle = Math.floor(postStart / cycleDur);
+        const inCycle = postStart % cycleDur;
+
+        // Smooth blur + dim ramp in over 1.4s starting at 24.8s (inCycle 0..1400ms)
+        if (inCycle < 1400) {
+          blurMix = smoothstep01(inCycle / 1400);
+        } else if (inCycle < 23800) {
+          blurMix = 1;
+        } else if (inCycle < 25600) {
+          // Restore full sharp bright Milky Way gently over 1.8s right after text fade starts
+          blurMix = 1 - smoothstep01((inCycle - 23800) / 1800);
+        } else {
+          blurMix = 0;
+        }
+
+        if (inCycle < 1200) nextPhase = 1;        // 24.8s -> 26.0s backdrop darkening & softening
+        else if (inCycle < 4400) nextPhase = 2;   // 26.0s Beat 1
+        else if (inCycle < 9000) nextPhase = 3;   // 29.2s Beat 2
+        else if (inCycle < 15600) nextPhase = 4;  // 33.8s Beat 3
+        else if (inCycle < 20600) nextPhase = 5;  // 40.4s Beat 4
+        else if (inCycle < 23400) nextPhase = 6;  // 45.4s Umar handwriting signature
+        else if (inCycle < 26000) nextPhase = 7;  // 48.2s (0.8s earlier!) text fades out cleanly, then galaxy restores
+        else nextPhase = 0;                       // Pure sharp Milky Way breathing interval
+      }
+
+      finaleVisualRef.current.blurMix = blurMix;
+
+      if (nextCycle !== prevCycle) {
+        prevCycle = nextCycle;
+        setFinaleCycle(nextCycle);
+      }
+      if (nextPhase !== prevPhase) {
+        prevPhase = nextPhase;
+        setFinalePhase(nextPhase);
+      }
+    }, 80);
 
     return () => {
-      timers.forEach(clearTimeout);
+      window.clearInterval(timer);
+      mq.removeEventListener("change", onMq);
     };
   }, []);
 
@@ -217,7 +322,7 @@ export function MemoryGalaxyScene() {
     try {
       renderer = new THREE.WebGLRenderer({
         canvas,
-        antialias: true,
+        antialias: false,
         powerPreference: "high-performance",
       });
     } catch {
@@ -233,19 +338,20 @@ export function MemoryGalaxyScene() {
       height: window.innerHeight,
     };
 
+    const dprCap = Math.min(window.devicePixelRatio || 1, isMobile ? 1.25 : 1.5);
     renderer.setSize(sizes.width, sizes.height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2));
+    renderer.setPixelRatio(dprCap);
     renderer.setClearColor(0x030308, 1);
 
     const scene = new THREE.Scene();
 
-    // Camera sweeps out cleanly to classic (3, 3, 3) diagonal view over the 3-arm spiral
-    const camera = new THREE.PerspectiveCamera(72, sizes.width / sizes.height, 0.03, 90);
-    const introStartPos = new THREE.Vector3(0.45, 0.34, 0.48);
+    // Diagonal Milky Way barred-spiral framing tuned for both desktop and mobile viewports
     const isPortrait = sizes.width / sizes.height < 0.85;
+    const camera = new THREE.PerspectiveCamera(isPortrait ? 68 : 72, sizes.width / sizes.height, 0.03, 90);
+    const introStartPos = new THREE.Vector3(0.45, 0.34, 0.48);
     const overviewCamPos = isPortrait
-      ? new THREE.Vector3(3.1, 2.9, 3.1)
-      : new THREE.Vector3(2.85, 2.55, 2.85);
+      ? new THREE.Vector3(2.45, 2.55, 2.45)
+      : new THREE.Vector3(2.8, 2.5, 2.8);
     camera.position.copy(reducedMotion ? overviewCamPos : introStartPos);
     scene.add(camera);
 
@@ -268,21 +374,21 @@ export function MemoryGalaxyScene() {
     controls.addEventListener("start", onControlStart);
     controls.addEventListener("end", onControlEnd);
 
-    // 1. Milky Way barred-spiral galaxy with vibrant multi-color glowing particles & dust clouds
+    // 1. Astronomical Milky Way barred-spiral starfield with ShaderMaterial (per-star size, dust lanes, twinkling)
     const params = {
-      count: isMobile ? 48000 : 74000,
-      size: isMobile ? 0.022 : 0.017,
-      radius: 2.95,
+      count: isMobile ? 11500 : 25000,
+      radius: 2.98,
       branches: 4,
-      spin: 3.45,
-      randomness: 2.0,
-      randomnessPower: 3.55,
-      insideColor: "#FFFDF7",
-      midColor: "#FFCE73",
-      roseColor: "#E87AB5",
-      magentaColor: "#B975F5",
-      outsideColor: "#5AA2FF",
-      tipColor: "#A8DCFF",
+      spin: 2.85,
+      insideColor: "#FFFDF8",
+      goldColor: "#FFE4A6",
+      ivoryWhite: "#F6F8FF",
+      roseColor: "#DFA0C4",
+      magentaColor: "#D178B5",
+      lavenderColor: "#B79AF2",
+      violetColor: "#8E6AE0",
+      cyanColor: "#78C7FF",
+      blueWhiteColor: "#D9ECFF",
     };
 
     const starGlowTex = createStarGlowTexture();
@@ -291,85 +397,186 @@ export function MemoryGalaxyScene() {
     const pointsGeo = new THREE.BufferGeometry();
     const positions = new Float32Array(params.count * 3);
     const colors = new Float32Array(params.count * 3);
-    const colorInside = new THREE.Color(params.insideColor);
-    const colorMid = new THREE.Color(params.midColor);
-    const colorRose = new THREE.Color(params.roseColor);
-    const colorMagenta = new THREE.Color(params.magentaColor);
-    const colorOutside = new THREE.Color(params.outsideColor);
-    const colorTip = new THREE.Color(params.tipColor);
+    const sizesAttr = new Float32Array(params.count);
+    const phasesAttr = new Float32Array(params.count);
+    const alphasAttr = new Float32Array(params.count);
 
-    const barAngle = 0.35;
-    for (let i = 0; i < params.count; i++) {
-      const i3 = i * 3;
-      const neg = () => (Math.random() < 0.5 ? 1 : -1);
+    const cInside = new THREE.Color(params.insideColor);
+    const cGold = new THREE.Color(params.goldColor);
+    const cWhite = new THREE.Color(params.ivoryWhite);
+    const cRose = new THREE.Color(params.roseColor);
+    const cMagenta = new THREE.Color(params.magentaColor);
+    const cLavender = new THREE.Color(params.lavenderColor);
+    const cViolet = new THREE.Color(params.violetColor);
+    const cCyan = new THREE.Color(params.cyanColor);
+    const cBlueWhite = new THREE.Color(params.blueWhiteColor);
+    const tmpColor = new THREE.Color();
 
-      // ~12% of stars form the Milky Way's central galactic bar feeding the spiral arms
-      if (i % 8 === 0) {
-        const barAlong = (Math.random() - 0.5) * 1.05;
-        const barAcross = Math.pow(Math.random(), 2.2) * neg() * 0.22;
-        const cosB = Math.cos(barAngle);
-        const sinB = Math.sin(barAngle);
+    const barAngle = 0.38;
+    const cosB = Math.cos(barAngle);
+    const sinB = Math.sin(barAngle);
+
+    let placed = 0;
+    let seedWalk = 0;
+    while (placed < params.count) {
+      seedWalk++;
+      const i3 = placed * 3;
+      const negX = Math.random() < 0.5 ? 1 : -1;
+      const negY = Math.random() < 0.5 ? 1 : -1;
+      const negZ = Math.random() < 0.5 ? 1 : -1;
+
+      // Dense, bright central galactic bar (~16% of stars) feeding the two primary spiral arms
+      if (placed % 6 === 0) {
+        const barAlong = (Math.random() - 0.5) * 1.15;
+        const barFrac = Math.min(1, Math.abs(barAlong) / 0.58);
+        const barAcross = Math.pow(Math.random(), 2.2) * negZ * (0.24 - barFrac * 0.08);
         positions[i3] = barAlong * cosB - barAcross * sinB;
-        positions[i3 + 1] = Math.pow(Math.random(), 2.8) * neg() * 0.16;
+        positions[i3 + 1] = Math.pow(Math.random(), 2.7) * negY * 0.16 * (1 - barFrac * 0.45);
         positions[i3 + 2] = barAlong * sinB + barAcross * cosB;
 
-        const barMix = colorInside.clone().lerp(colorMid, Math.min(1, Math.abs(barAlong) / 0.55));
-        colors[i3] = barMix.r;
-        colors[i3 + 1] = barMix.g;
-        colors[i3 + 2] = barMix.b;
+        tmpColor.copy(cInside).lerp(cGold, barFrac * 0.85);
+        if (Math.random() > 0.72) tmpColor.lerp(cWhite, 0.35);
+        colors[i3] = tmpColor.r;
+        colors[i3 + 1] = tmpColor.g;
+        colors[i3 + 2] = tmpColor.b;
+
+        const isBrightStar = Math.random() > 0.86;
+        sizesAttr[placed] = isBrightStar ? 2.4 + Math.random() * 1.8 : 0.9 + Math.random() * 1.25;
+        alphasAttr[placed] = (0.68 + Math.random() * 0.32) * (1 - barFrac * 0.25);
+        phasesAttr[placed] = Math.random() * Math.PI * 2;
+        placed++;
         continue;
       }
 
-      // Exponential core clustering + luminous outer trailing fragments
-      const isOuterFragment = i % 5 === 0;
-      const r = isOuterFragment
-        ? (0.52 + Math.pow(Math.random(), 0.9) * 0.62) * params.radius
-        : Math.pow(Math.random(), 1.95) * params.radius;
-      const spinAngle = r * params.spin;
-      const branchIndex = i % params.branches;
+      // Sweeping curved logarithmic spiral arms: 2 dense dominant arms (0, 2) + 2 finer spurs (1, 3)
+      const isOuterTrail = seedWalk % 6 === 0;
+      const r = isOuterTrail
+        ? (0.45 + Math.pow(Math.random(), 0.9) * 0.62) * params.radius
+        : Math.pow(Math.random(), 1.65) * params.radius;
+      const armChoice = seedWalk % 7;
+      const branchIndex = armChoice < 3 ? 0 : armChoice < 6 ? 2 : seedWalk % 2 === 0 ? 1 : 3;
+      const isMinorSpur = branchIndex === 1 || branchIndex === 3;
+
       const branchAngle = (branchIndex / params.branches) * Math.PI * 2 + barAngle;
+      const spinAngle = r * params.spin + Math.log(1 + r * 2.4) * 0.68;
 
-      const armSpread = 0.28 + r * 0.24;
-      const randomX = Math.pow(Math.random(), params.randomnessPower) * neg() * params.randomness * armSpread;
-      const randomY = Math.pow(Math.random(), params.randomnessPower) * neg() * (0.1 + Math.exp(-r * 2.0) * 0.42);
-      const randomZ = Math.pow(Math.random(), params.randomnessPower) * neg() * params.randomness * armSpread;
+      // Angular offset from arm ridge: negative = inner concave trailing side (carves dark dust lanes!)
+      const gaussianApprox = ((Math.random() + Math.random() + Math.random()) / 3 - 0.5) * 2.0;
+      const angularWidth = (isMinorSpur ? 0.24 : 0.32) * (0.52 + 0.55 * (r / params.radius));
+      const deltaAngle = gaussianApprox * angularWidth;
 
-      positions[i3] = Math.cos(branchAngle + spinAngle) * r + randomX;
-      positions[i3 + 1] = randomY;
-      positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * r + randomZ;
-
-      const t = Math.min(1.15, r / params.radius);
-      const mixed = colorInside.clone();
-      if (t < 0.16) {
-        mixed.lerp(colorMid, t / 0.16);
-      } else if (t < 0.4) {
-        mixed.copy(colorMid).lerp(colorRose, (t - 0.16) / 0.24);
-      } else if (t < 0.62) {
-        mixed.copy(colorRose).lerp(colorMagenta, (t - 0.4) / 0.22);
-      } else if (t < 0.84) {
-        mixed.copy(colorMagenta).lerp(colorOutside, (t - 0.62) / 0.22);
-      } else {
-        mixed.copy(colorOutside).lerp(colorTip, Math.min(1, (t - 0.84) / 0.3));
+      // Carve subtle astronomical dark dust lanes on the inner concave edge of primary spiral arms
+      if (!isMinorSpur && r > 0.38 && r < 2.45 && deltaAngle > -0.18 && deltaAngle < -0.045) {
+        if (Math.random() < 0.72) continue;
       }
 
-      colors[i3] = mixed.r;
-      colors[i3 + 1] = mixed.g;
-      colors[i3 + 2] = mixed.b;
+      const finalAngle = branchAngle + spinAngle + deltaAngle;
+      const radialJitter = (Math.random() - 0.5) * (0.08 + r * 0.08);
+      const radiusActual = Math.max(0.05, r + radialJitter);
+
+      positions[i3] = Math.cos(finalAngle) * radiusActual;
+      positions[i3 + 1] =
+        Math.pow(Math.random(), 2.9) * negY * (0.065 + Math.exp(-r * 2.0) * 0.38);
+      positions[i3 + 2] = Math.sin(finalAngle) * radiusActual;
+
+      // Coherent galactic stellar population colors with organic temperature variation (no discrete bands)
+      const t = Math.min(1.12, r / params.radius);
+      const jitterT = Math.max(0, Math.min(1, t + (Math.random() - 0.5) * 0.16));
+      if (jitterT < 0.22) {
+        tmpColor.copy(cInside).lerp(cGold, jitterT / 0.22);
+      } else if (jitterT < 0.45) {
+        const u = (jitterT - 0.22) / 0.23;
+        tmpColor.copy(cGold).lerp(Math.random() > 0.45 ? cRose : cWhite, u);
+      } else if (jitterT < 0.72) {
+        const u = (jitterT - 0.45) / 0.27;
+        const midTarget = deltaAngle > 0.04 ? cBlueWhite : Math.random() > 0.5 ? cLavender : cMagenta;
+        tmpColor.copy(cWhite).lerp(midTarget, 0.55 + 0.45 * u);
+      } else {
+        const u = (jitterT - 0.72) / 0.28;
+        const outerTarget =
+          deltaAngle > 0.03 ? (Math.random() > 0.42 ? cCyan : cBlueWhite) : Math.random() > 0.5 ? cViolet : cLavender;
+        tmpColor.copy(cBlueWhite).lerp(outerTarget, 0.4 + 0.6 * u);
+      }
+
+      // Subtle star-forming pink/magenta/ivory accents along bright ridges
+      if (Math.random() > 0.91 && t > 0.25 && t < 0.85) {
+        tmpColor.lerp(Math.random() > 0.5 ? cMagenta : cInside, 0.42);
+      }
+
+      colors[i3] = tmpColor.r;
+      colors[i3 + 1] = tmpColor.g;
+      colors[i3 + 2] = tmpColor.b;
+
+      const tier = Math.random();
+      if (tier > 0.955) {
+        // Rare bright supergiant stars
+        sizesAttr[placed] = 3.2 + Math.random() * 2.1;
+        alphasAttr[placed] = 0.85 + Math.random() * 0.15;
+      } else if (tier > 0.72) {
+        // Medium spiral arm stars
+        sizesAttr[placed] = 1.6 + Math.random() * 1.3;
+        alphasAttr[placed] = 0.58 + Math.random() * 0.34;
+      } else {
+        // Fine luminous Milky Way stardust
+        sizesAttr[placed] = 0.65 + Math.random() * 0.9;
+        alphasAttr[placed] = 0.28 + Math.random() * 0.36;
+      }
+      // Brighter near inner bulge & primary spiral ridge
+      alphasAttr[placed] *= (isMinorSpur ? 0.76 : 1.0) * (1.0 - t * 0.18) * (deltaAngle > -0.02 ? 1.05 : 0.78);
+      phasesAttr[placed] = negX * (Math.random() * Math.PI * 2);
+      placed++;
     }
 
     pointsGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     pointsGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    pointsGeo.setAttribute("aSize", new THREE.BufferAttribute(sizesAttr, 1));
+    pointsGeo.setAttribute("aPhase", new THREE.BufferAttribute(phasesAttr, 1));
+    pointsGeo.setAttribute("aAlpha", new THREE.BufferAttribute(alphasAttr, 1));
 
     const galaxyRoot = new THREE.Group();
     scene.add(galaxyRoot);
 
-    const pointsMat = new THREE.PointsMaterial({
-      size: params.size,
-      map: starGlowTex,
-      sizeAttenuation: true,
-      depthWrite: false,
+    const pointsMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uPixelRatio: { value: dprCap },
+        uScale: { value: isMobile ? 4.8 : 4.2 },
+      },
+      vertexShader: `
+        attribute float aSize;
+        attribute float aPhase;
+        attribute float aAlpha;
+        varying vec3 vColor;
+        varying float vAlpha;
+        uniform float uTime;
+        uniform float uPixelRatio;
+        uniform float uScale;
+        void main() {
+          vColor = color;
+          float twinkle = 0.88 + 0.12 * sin(uTime * 1.35 + aPhase);
+          vAlpha = aAlpha * twinkle;
+          vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+          float dist = max(0.32, -mvPos.z);
+          gl_PointSize = clamp(aSize * uScale * uPixelRatio / dist, 1.15, 22.0);
+          gl_Position = projectionMatrix * mvPos;
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vColor;
+        varying float vAlpha;
+        void main() {
+          vec2 uv = gl_PointCoord - vec2(0.5);
+          float d2 = dot(uv, uv) * 4.0;
+          if (d2 > 1.0) discard;
+          float core = exp(-d2 * 12.0);
+          float halo = exp(-d2 * 3.4) * 0.48;
+          float intensity = (core + halo) * vAlpha;
+          vec3 starCol = mix(vColor, vec3(1.0, 0.99, 0.96), core * 0.65);
+          gl_FragColor = vec4(starCol * intensity, intensity);
+        }
+      `,
       transparent: true,
-      opacity: 0.96,
+      depthWrite: false,
       blending: THREE.AdditiveBlending,
       vertexColors: true,
     });
@@ -377,133 +584,108 @@ export function MemoryGalaxyScene() {
     const starPoints = new THREE.Points(pointsGeo, pointsMat);
     galaxyRoot.add(starPoints);
 
-    // Milky Way multi-color glowing nebula band & H-II star-forming clouds
-    const nebulaCount = isMobile ? 2800 : 4600;
+    // Soft volumetric-looking nebula & H-II clouds nestled along & between spiral arms
+    const nebulaCount = isMobile ? 160 : 320;
     const nebulaGeo = new THREE.BufferGeometry();
     const nebulaPos = new Float32Array(nebulaCount * 3);
     const nebulaCol = new Float32Array(nebulaCount * 3);
     for (let i = 0; i < nebulaCount; i++) {
       const i3 = i * 3;
-      const neg = () => (Math.random() < 0.5 ? 1 : -1);
-      const r = (0.14 + Math.pow(Math.random(), 0.92) * 0.98) * params.radius;
-      const spinAngle = r * params.spin;
+      const neg = Math.random() < 0.5 ? 1 : -1;
+      const r = (0.14 + Math.pow(Math.random(), 0.92) * 0.9) * params.radius;
+      const spinAngle = r * params.spin + Math.log(1 + r * 2.4) * 0.68;
       const branchAngle = ((i % params.branches) / params.branches) * Math.PI * 2 + barAngle;
-      const scatter = 0.2 + r * 0.13;
+      const angOffset = (Math.random() - 0.5) * (0.28 + r * 0.14);
 
-      nebulaPos[i3] = Math.cos(branchAngle + spinAngle) * r + (Math.random() - 0.5) * scatter;
-      nebulaPos[i3 + 1] = Math.pow(Math.random(), 2.2) * neg() * 0.14;
-      nebulaPos[i3 + 2] = Math.sin(branchAngle + spinAngle) * r + (Math.random() - 0.5) * scatter;
+      nebulaPos[i3] = Math.cos(branchAngle + spinAngle + angOffset) * r;
+      nebulaPos[i3 + 1] = Math.pow(Math.random(), 2.2) * neg * 0.09;
+      nebulaPos[i3 + 2] = Math.sin(branchAngle + spinAngle + angOffset) * r;
 
       const t = r / params.radius;
-      const nc = t < 0.32
-        ? colorMid.clone().lerp(colorRose, t / 0.32)
-        : t < 0.62
-          ? colorRose.clone().lerp(colorMagenta, (t - 0.32) / 0.3)
-          : t < 0.85
-            ? colorMagenta.clone().lerp(colorOutside, (t - 0.62) / 0.23)
-            : colorOutside.clone().lerp(colorTip, Math.min(1, (t - 0.85) / 0.3));
-      nebulaCol[i3] = nc.r;
-      nebulaCol[i3 + 1] = nc.g;
-      nebulaCol[i3 + 2] = nc.b;
+      if (t < 0.28) {
+        tmpColor.copy(cGold).lerp(cRose, t / 0.28);
+      } else if (t < 0.62) {
+        tmpColor.copy(cRose).lerp(Math.random() > 0.5 ? cViolet : cMagenta, (t - 0.28) / 0.34);
+      } else {
+        tmpColor.copy(cLavender).lerp(cCyan, Math.min(1, (t - 0.62) / 0.38));
+      }
+      nebulaCol[i3] = tmpColor.r;
+      nebulaCol[i3 + 1] = tmpColor.g;
+      nebulaCol[i3 + 2] = tmpColor.b;
     }
     nebulaGeo.setAttribute("position", new THREE.BufferAttribute(nebulaPos, 3));
     nebulaGeo.setAttribute("color", new THREE.BufferAttribute(nebulaCol, 3));
     const nebulaMat = new THREE.PointsMaterial({
-      size: isMobile ? 0.26 : 0.21,
+      size: isMobile ? 0.36 : 0.42,
       map: nebulaGlowTex,
       sizeAttenuation: true,
       depthWrite: false,
       transparent: true,
-      opacity: 0.14,
+      opacity: 0.068,
       blending: THREE.AdditiveBlending,
       vertexColors: true,
     });
     const nebulaPoints = new THREE.Points(nebulaGeo, nebulaMat);
     galaxyRoot.add(nebulaPoints);
 
-    // Sparkling luminous foreground supergiant stars in gold, rose, violet & cyan-blue
-    const gemCount = isMobile ? 650 : 1100;
-    const gemGeo = new THREE.BufferGeometry();
-    const gemPos = new Float32Array(gemCount * 3);
-    const gemCol = new Float32Array(gemCount * 3);
-    const gemPalette = [colorInside, colorMid, colorRose, colorMagenta, colorOutside, colorTip];
-    for (let i = 0; i < gemCount; i++) {
-      const i3 = i * 3;
-      const r = (0.12 + Math.pow(Math.random(), 0.95) * 0.96) * params.radius;
-      const spinAngle = r * params.spin;
-      const branchAngle = ((i % params.branches) / params.branches) * Math.PI * 2 + barAngle;
-      const scatter = 0.22 + r * 0.15;
-      gemPos[i3] = Math.cos(branchAngle + spinAngle) * r + (Math.random() - 0.5) * scatter;
-      gemPos[i3 + 1] = (Math.random() - 0.5) * 0.22;
-      gemPos[i3 + 2] = Math.sin(branchAngle + spinAngle) * r + (Math.random() - 0.5) * scatter;
-      const gc = gemPalette[i % gemPalette.length];
-      gemCol[i3] = gc.r;
-      gemCol[i3 + 1] = gc.g;
-      gemCol[i3 + 2] = gc.b;
-    }
-    gemGeo.setAttribute("position", new THREE.BufferAttribute(gemPos, 3));
-    gemGeo.setAttribute("color", new THREE.BufferAttribute(gemCol, 3));
-    const gemMat = new THREE.PointsMaterial({
-      size: isMobile ? 0.048 : 0.038,
-      map: starGlowTex,
-      sizeAttenuation: true,
-      depthWrite: false,
-      transparent: true,
-      opacity: 0.92,
-      blending: THREE.AdditiveBlending,
-      vertexColors: true,
-    });
-    const gemPoints = new THREE.Points(gemGeo, gemMat);
-    galaxyRoot.add(gemPoints);
-
-    // Highly dense, luminous warm galactic core bulge
+    // Dense, noticeably warmer & brighter central galactic bulge
     const coreGeo = new THREE.BufferGeometry();
-    const coreCount = isMobile ? 1800 : 3200;
+    const coreCount = isMobile ? 1100 : 2200;
     const corePos = new Float32Array(coreCount * 3);
     const coreCol = new Float32Array(coreCount * 3);
+    const coreSizes = new Float32Array(coreCount);
+    const corePhases = new Float32Array(coreCount);
+    const coreAlphas = new Float32Array(coreCount);
     for (let i = 0; i < coreCount; i++) {
       const i3 = i * 3;
-      const rr = Math.pow(Math.random(), 2.6) * 0.74;
+      const rr = Math.pow(Math.random(), 2.4) * 0.72;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
       corePos[i3] = Math.sin(phi) * Math.cos(theta) * rr;
-      corePos[i3 + 1] = Math.cos(phi) * rr * 0.42;
+      corePos[i3 + 1] = Math.cos(phi) * rr * 0.4;
       corePos[i3 + 2] = Math.sin(phi) * Math.sin(theta) * rr;
-      const c = colorInside.clone().lerp(colorMid, Math.min(1, rr / 0.74));
-      coreCol[i3] = c.r;
-      coreCol[i3 + 1] = c.g;
-      coreCol[i3 + 2] = c.b;
+      const ratio = Math.min(1, rr / 0.72);
+      tmpColor.copy(cInside).lerp(cGold, ratio * 0.85);
+      coreCol[i3] = tmpColor.r;
+      coreCol[i3 + 1] = tmpColor.g;
+      coreCol[i3 + 2] = tmpColor.b;
+      coreSizes[i] = 1.6 + (1 - ratio) * 2.2 + Math.random() * 1.1;
+      corePhases[i] = Math.random() * Math.PI * 2;
+      coreAlphas[i] = 0.55 + (1 - ratio) * 0.45;
     }
     coreGeo.setAttribute("position", new THREE.BufferAttribute(corePos, 3));
     coreGeo.setAttribute("color", new THREE.BufferAttribute(coreCol, 3));
-    const coreMat = new THREE.PointsMaterial({
-      size: isMobile ? 0.046 : 0.036,
-      map: starGlowTex,
-      sizeAttenuation: true,
-      depthWrite: false,
-      transparent: true,
-      opacity: 0.72,
-      blending: THREE.AdditiveBlending,
-      vertexColors: true,
-    });
+    coreGeo.setAttribute("aSize", new THREE.BufferAttribute(coreSizes, 1));
+    coreGeo.setAttribute("aPhase", new THREE.BufferAttribute(corePhases, 1));
+    coreGeo.setAttribute("aAlpha", new THREE.BufferAttribute(coreAlphas, 1));
+    const coreMat = pointsMat.clone();
+    coreMat.uniforms = {
+      uTime: pointsMat.uniforms.uTime,
+      uPixelRatio: pointsMat.uniforms.uPixelRatio,
+      uScale: { value: isMobile ? 5.1 : 4.5 },
+    };
     const corePoints = new THREE.Points(coreGeo, coreMat);
     galaxyRoot.add(corePoints);
+
+    // Dummy reference kept for cleanup compatibility
+    const gemGeo = new THREE.BufferGeometry();
+    const gemMat = new THREE.PointsMaterial({ visible: false });
 
     // Soft central galactic core bloom halo
     const coreHaloMat = new THREE.SpriteMaterial({
       map: nebulaGlowTex,
-      color: new THREE.Color("#FFE8C2"),
+      color: new THREE.Color("#FFE9BE"),
       transparent: true,
-      opacity: 0.36,
+      opacity: 0.46,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     });
     const coreHaloSprite = new THREE.Sprite(coreHaloMat);
-    coreHaloSprite.scale.set(1.6, 1.05, 1);
+    coreHaloSprite.scale.set(1.75, 1.12, 1);
     galaxyRoot.add(coreHaloSprite);
 
     // Distant deep-space background starfield
-    const bgCount = isMobile ? 550 : 1000;
+    const bgCount = isMobile ? 420 : 720;
     const bgGeo = new THREE.BufferGeometry();
     const bgPos = new Float32Array(bgCount * 3);
     for (let i = 0; i < bgCount; i++) {
@@ -547,184 +729,176 @@ export function MemoryGalaxyScene() {
     }> = [];
     const raycastSprites: THREE.Sprite[] = [];
 
-    const spriteCount = isMobile ? 220 : 340;
+    const spriteCount = isMobile ? 120 : 190;
     let isDisposed = false;
 
     const PLANET_RIMS = [
-      { core: "rgba(255, 248, 235, 1.0)", glow: "rgba(255, 224, 150, 0.75)", outer: "rgba(240, 200, 110, 0)" }, // Brilliant Champagne Gold
-      { core: "rgba(248, 240, 255, 1.0)", glow: "rgba(215, 195, 255, 0.72)", outer: "rgba(180, 160, 250, 0)" }, // Luminous Lavender
-      { core: "rgba(255, 240, 248, 1.0)", glow: "rgba(255, 185, 210, 0.72)", outer: "rgba(240, 160, 190, 0)" }, // Luminous Rose
+      { core: "rgba(255, 248, 235, 1.0)", glow: "rgba(255, 224, 150, 0.72)", outer: "rgba(240, 200, 110, 0)" }, // Brilliant Champagne Gold
+      { core: "rgba(248, 240, 255, 1.0)", glow: "rgba(215, 195, 255, 0.68)", outer: "rgba(180, 160, 250, 0)" }, // Luminous Lavender
+      { core: "rgba(255, 240, 248, 1.0)", glow: "rgba(255, 185, 210, 0.68)", outer: "rgba(240, 160, 190, 0)" }, // Luminous Rose
     ] as const;
 
-    const createCelestialPlanetTexture = (
+    // Precompute shared spherical shading + Fresnel rim + specular crescent overlay once for all planets
+    const PLANET_DIM = 192;
+    const PLANET_CX = PLANET_DIM / 2;
+    const PLANET_CY = PLANET_DIM / 2;
+    const PLANET_SPHERE_R = Math.floor(PLANET_DIM * 0.4);
+    const sharedOverlay = document.createElement("canvas");
+    sharedOverlay.width = PLANET_DIM;
+    sharedOverlay.height = PLANET_DIM;
+    const ovCtx = sharedOverlay.getContext("2d");
+    if (ovCtx) {
+      // Subtle spherical limb darkening + Fresnel rim
+      const limbGrad = ovCtx.createRadialGradient(
+        PLANET_CX - PLANET_SPHERE_R * 0.12,
+        PLANET_CY - PLANET_SPHERE_R * 0.14,
+        PLANET_SPHERE_R * 0.25,
+        PLANET_CX,
+        PLANET_CY,
+        PLANET_SPHERE_R
+      );
+      limbGrad.addColorStop(0, "rgba(255, 252, 245, 0)");
+      limbGrad.addColorStop(0.72, "rgba(10, 8, 18, 0.12)");
+      limbGrad.addColorStop(0.92, "rgba(255, 240, 215, 0.28)");
+      limbGrad.addColorStop(1, "rgba(255, 245, 225, 0.58)");
+      ovCtx.fillStyle = limbGrad;
+      ovCtx.beginPath();
+      ovCtx.arc(PLANET_CX, PLANET_CY, PLANET_SPHERE_R, 0, Math.PI * 2);
+      ovCtx.fill();
+
+      // Delicate top-left celestial crescent specular highlight
+      const spec = ovCtx.createRadialGradient(
+        PLANET_CX - PLANET_SPHERE_R * 0.35,
+        PLANET_CY - PLANET_SPHERE_R * 0.38,
+        0,
+        PLANET_CX - PLANET_SPHERE_R * 0.35,
+        PLANET_CY - PLANET_SPHERE_R * 0.38,
+        PLANET_SPHERE_R * 0.82
+      );
+      spec.addColorStop(0, "rgba(255, 255, 255, 0.42)");
+      spec.addColorStop(0.35, "rgba(255, 250, 240, 0.16)");
+      spec.addColorStop(1, "rgba(255, 252, 245, 0)");
+      ovCtx.fillStyle = spec;
+      ovCtx.beginPath();
+      ovCtx.arc(PLANET_CX, PLANET_CY, PLANET_SPHERE_R, 0, Math.PI * 2);
+      ovCtx.fill();
+    }
+
+    const createCelestialPlanetTexture = async (
       src: string,
       rimVariant: (typeof PLANET_RIMS)[number],
       focal?: { fx: number; fy: number }
-    ): Promise<THREE.CanvasTexture | null> =>
-      new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => {
-          if (isDisposed) {
-            resolve(null);
-            return;
-          }
-          const dim = 256;
-          const cv = document.createElement("canvas");
-          cv.width = dim;
-          cv.height = dim;
-          const c = cv.getContext("2d");
-          if (!c) {
-            resolve(null);
-            return;
-          }
+    ): Promise<THREE.CanvasTexture | null> => {
+      try {
+        let bmp: ImageBitmap | HTMLImageElement;
+        let iw = 0;
+        let ih = 0;
+        if (typeof createImageBitmap === "function") {
+          const resp = await fetch(src);
+          if (!resp.ok || isDisposed) return null;
+          const blob = await resp.blob();
+          if (isDisposed) return null;
+          bmp = await createImageBitmap(blob);
+          iw = bmp.width;
+          ih = bmp.height;
+        } else {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.src = src;
+          await img.decode();
+          bmp = img;
+          iw = img.width;
+          ih = img.height;
+        }
+        if (isDisposed || iw === 0 || ih === 0) {
+          if ("close" in bmp && typeof bmp.close === "function") bmp.close();
+          return null;
+        }
 
-          const cx = dim / 2;
-          const cy = dim / 2;
-          const sphereR = Math.floor(dim * 0.40);
-          const outerR = dim * 0.5;
+        const cv = document.createElement("canvas");
+        cv.width = PLANET_DIM;
+        cv.height = PLANET_DIM;
+        const c = cv.getContext("2d");
+        if (!c) {
+          if ("close" in bmp && typeof bmp.close === "function") bmp.close();
+          return null;
+        }
 
-          // Atmospheric outer planetary halo matching star glow softly
-          const halo = c.createRadialGradient(cx, cy, sphereR * 0.85, cx, cy, outerR);
-          halo.addColorStop(0, rimVariant.core);
-          halo.addColorStop(0.38, rimVariant.glow);
-          halo.addColorStop(1, rimVariant.outer);
-          c.fillStyle = halo;
-          c.beginPath();
-          c.arc(cx, cy, outerR, 0, Math.PI * 2);
-          c.fill();
+        const outerR = PLANET_DIM * 0.5;
+        const halo = c.createRadialGradient(
+          PLANET_CX,
+          PLANET_CY,
+          PLANET_SPHERE_R * 0.85,
+          PLANET_CX,
+          PLANET_CY,
+          outerR
+        );
+        halo.addColorStop(0, rimVariant.core);
+        halo.addColorStop(0.38, rimVariant.glow);
+        halo.addColorStop(1, rimVariant.outer);
+        c.fillStyle = halo;
+        c.beginPath();
+        c.arc(PLANET_CX, PLANET_CY, outerR, 0, Math.PI * 2);
+        c.fill();
 
-          // Frame portrait cleanly around explicit subject focal point without cutting off faces
-          const cropSize = sphereR * 2;
-          const srcCanvas = document.createElement("canvas");
-          srcCanvas.width = cropSize;
-          srcCanvas.height = cropSize;
-          const sc = srcCanvas.getContext("2d");
-          if (!sc) {
-            resolve(null);
-            return;
-          }
-          const imgScale = Math.max(cropSize / img.width, cropSize / img.height);
-          const dw = img.width * imgScale;
-          const dh = img.height * imgScale;
-          const fx = focal?.fx ?? 0.5;
-          const fy = focal?.fy ?? (img.height > img.width ? 0.38 : 0.45);
-          const drawX = Math.min(0, Math.max(cropSize - dw, cropSize * 0.5 - fx * dw));
-          const drawY = Math.min(0, Math.max(cropSize - dh, cropSize * 0.5 - fy * dh));
-          sc.drawImage(img, drawX, drawY, dw, dh);
-          const srcData = sc.getImageData(0, 0, cropSize, cropSize).data;
+        const cropSize = PLANET_SPHERE_R * 2;
+        const imgScale = Math.max(cropSize / iw, cropSize / ih);
+        const dw = iw * imgScale;
+        const dh = ih * imgScale;
+        const fx = focal?.fx ?? 0.5;
+        const fy = focal?.fy ?? (ih > iw ? 0.38 : 0.45);
+        const drawX =
+          PLANET_CX - PLANET_SPHERE_R + Math.min(0, Math.max(cropSize - dw, cropSize * 0.5 - fx * dw));
+        const drawY =
+          PLANET_CY - PLANET_SPHERE_R + Math.min(0, Math.max(cropSize - dh, cropSize * 0.5 - fy * dh));
 
-          // Gentle spherical projection + crisp photo clarity + vibrant rim light
-          const sphereImg = c.createImageData(cropSize, cropSize);
-          const out = sphereImg.data;
-          const invR = 1 / sphereR;
+        c.save();
+        c.beginPath();
+        c.arc(PLANET_CX, PLANET_CY, PLANET_SPHERE_R, 0, Math.PI * 2);
+        c.clip();
+        c.drawImage(bmp, drawX, drawY, dw, dh);
+        c.drawImage(sharedOverlay, 0, 0);
+        c.restore();
 
-          for (let py = 0; py < cropSize; py++) {
-            const ny = (py - sphereR + 0.5) * invR;
-            for (let px = 0; px < cropSize; px++) {
-              const nx = (px - sphereR + 0.5) * invR;
-              const r2 = nx * nx + ny * ny;
-              const outIdx = (py * cropSize + px) * 4;
-              if (r2 > 1) {
-                out[outIdx + 3] = 0;
-                continue;
-              }
-              const r = Math.sqrt(r2);
-              const nz = Math.sqrt(Math.max(0, 1 - r2));
+        if ("close" in bmp && typeof bmp.close === "function") bmp.close();
 
-              const warp = 1 - 0.08 * (1 - nz);
-              const sx = Math.min(
-                cropSize - 1,
-                Math.max(0, Math.round((nx * warp + 1) * 0.5 * (cropSize - 1)))
-              );
-              const sy = Math.min(
-                cropSize - 1,
-                Math.max(0, Math.round((ny * warp + 1) * 0.5 * (cropSize - 1)))
-              );
-              const srcIdx = (sy * cropSize + sx) * 4;
+        const tex = new THREE.CanvasTexture(cv);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.needsUpdate = true;
+        return tex;
+      } catch {
+        return null;
+      }
+    };
 
-              // High photo vibrancy & clarity + glowing rim
-              const lightDot = Math.max(0, nx * -0.25 + ny * -0.3 + nz * 0.9);
-              const limb = 0.72 + 0.28 * Math.pow(nz, 0.4) * (0.8 + 0.25 * lightDot);
-              const fresnel = Math.pow(1 - nz, 2.4) * 0.75;
-
-              out[outIdx] = Math.min(255, Math.round(srcData[srcIdx] * limb + 255 * fresnel));
-              out[outIdx + 1] = Math.min(
-                255,
-                Math.round(srcData[srcIdx + 1] * limb + 242 * fresnel)
-              );
-              out[outIdx + 2] = Math.min(
-                255,
-                Math.round(srcData[srcIdx + 2] * limb + 225 * fresnel)
-              );
-              // Clean spherical edge feather
-              const edgeAlpha = r > 0.95 ? Math.max(0, (1 - r) / 0.05) : 1;
-              out[outIdx + 3] = Math.round(255 * edgeAlpha);
-            }
-          }
-
-          // Composite spherical globe onto halo canvas cleanly
-          const tmpSphere = document.createElement("canvas");
-          tmpSphere.width = cropSize;
-          tmpSphere.height = cropSize;
-          tmpSphere.getContext("2d")!.putImageData(sphereImg, 0, 0);
-          c.drawImage(tmpSphere, cx - sphereR, cy - sphereR);
-
-          // Delicate top-left celestial crescent reflection
-          const spec = c.createRadialGradient(
-            cx - sphereR * 0.35,
-            cy - sphereR * 0.38,
-            0,
-            cx - sphereR * 0.35,
-            cy - sphereR * 0.38,
-            sphereR * 0.85
-          );
-          spec.addColorStop(0, "rgba(255, 255, 255, 0.42)");
-          spec.addColorStop(0.35, "rgba(255, 250, 240, 0.18)");
-          spec.addColorStop(1, "rgba(255, 252, 245, 0)");
-          c.fillStyle = spec;
-          c.beginPath();
-          c.arc(cx, cy, sphereR, 0, Math.PI * 2);
-          c.fill();
-
-          const tex = new THREE.CanvasTexture(cv);
-          tex.colorSpace = THREE.SRGBColorSpace;
-          tex.needsUpdate = true;
-          resolve(tex);
-        };
-        img.onerror = () => resolve(null);
-        img.src = src;
-      });
-
-    // Generate 1 celestial rim variant per item so GPU textures stay <= 20 uploads while planets shimmer in champagne/lavender/rose
-    Promise.all(
-      ALL_MEMORY_MEDIA.map(async (item, idx) => {
+    // Decode & upload 1 planet texture per yielded frame after brief entry settle -> smooth 60 FPS fly-in
+    (async () => {
+      await new Promise<void>((res) => setTimeout(res, 220));
+      const valid: Array<{ item: MemoryMedia; mat: THREE.SpriteMaterial }> = [];
+      for (let idx = 0; idx < ALL_MEMORY_MEDIA.length; idx++) {
+        if (isDisposed) return;
+        const item = ALL_MEMORY_MEDIA[idx];
         const rimVariant = PLANET_RIMS[idx % PLANET_RIMS.length];
         const tex = await createCelestialPlanetTexture(item.src, rimVariant, {
           fx: item.fx ?? 0.5,
           fy: item.fy ?? 0.42,
         });
-        if (!tex || isDisposed) return null;
-        createdTextures.push(tex);
-        const mat = new THREE.SpriteMaterial({
-          map: tex,
-          transparent: true,
-          opacity: 0.95,
-          depthWrite: false,
-        });
-        createdMaterials.push(mat);
-        return { item, mat };
-      })
-    ).then((loaded) => {
-      if (isDisposed) return;
-      const valid = loaded.filter(Boolean) as Array<{
-        item: MemoryMedia;
-        mat: THREE.SpriteMaterial;
-      }>;
-      if (valid.length === 0) return;
+        if (tex && !isDisposed) {
+          createdTextures.push(tex);
+          const mat = new THREE.SpriteMaterial({
+            map: tex,
+            transparent: true,
+            opacity: 0.95,
+            depthWrite: false,
+          });
+          createdMaterials.push(mat);
+          valid.push({ item, mat });
+        }
+        await new Promise<void>((res) => setTimeout(res, 18));
+      }
 
-      // Interleave Shruti's photos evenly (never consecutive duplicates) and enforce spatial separation
-      // so the same picture is NEVER placed near another copy of itself.
+      if (isDisposed || valid.length === 0) return;
+
       const shrutiEntries = valid.filter((v) => v.item.src.includes("/images/shruti/"));
       const otherEntries = valid.filter((v) => !v.item.src.includes("/images/shruti/"));
 
@@ -733,7 +907,6 @@ export function MemoryGalaxyScene() {
       for (let round = 0; round < maxRounds; round++) {
         const roundShruti = [...shrutiEntries].sort(() => Math.random() - 0.5);
         for (let k = 0; k < roundShruti.length; k++) {
-          // Prevent adjacent match across round boundaries
           if (
             shuffledOrder.length > 0 &&
             shuffledOrder[shuffledOrder.length - 1].item.src === roundShruti[k].item.src &&
@@ -749,42 +922,54 @@ export function MemoryGalaxyScene() {
         }
       }
 
-      const placedPlanets: Array<{ x: number; y: number; z: number; src: string }> = [];
-      const minSamePhotoDistSq = 1.05 * 1.05; // Enforce >= 1.05 units between identical photos
-      const minAnyPhotoDistSq = 0.22 * 0.22;  // Prevent overlapping planets
+      // O(1) spatial hash grid prevents O(N^2) spacing checks across candidate attempts
+      const gridCell = 1.08;
+      const spatialGrid = new Map<string, Array<{ x: number; y: number; z: number; src: string }>>();
+      const cellKey = (gx: number, gz: number) => `${gx},${gz}`;
+      const minSamePhotoDistSq = 1.05 * 1.05;
+      const minAnyPhotoDistSq = 0.24 * 0.24;
 
       for (let i = 0; i < spriteCount; i++) {
+        if (isDisposed) return;
         const entry = shuffledOrder[i % shuffledOrder.length];
         let bestX = 0;
         let bestY = 0;
         let bestZ = 0;
         let bestR = 0.5;
 
-        // Sample candidate positions along spiral arms and pick one far from any copy of the same photo
-        for (let attempt = 0; attempt < 24; attempt++) {
-          const r = 0.3 + Math.pow(Math.random(), 1.02) * (params.radius - 0.16);
-          const spinAngle = r * params.spin;
+        for (let attempt = 0; attempt < 18; attempt++) {
+          const r = 0.32 + Math.pow(Math.random(), 1.02) * (params.radius - 0.18);
+          const spinAngle = r * params.spin + Math.log(1 + r * 2.4) * 0.68;
           const branchIdx = (i + attempt) % params.branches;
           const branchAngle = (branchIdx / params.branches) * Math.PI * 2 + barAngle;
-          const spread = 0.25 * (0.55 + r / params.radius);
+          const spread = 0.22 * (0.55 + r / params.radius);
           const cx = Math.cos(branchAngle + spinAngle) * r + (Math.random() - 0.5) * spread;
-          const cy = (Math.random() - 0.5) * 0.26;
+          const cy = (Math.random() - 0.5) * 0.22;
           const cz = Math.sin(branchAngle + spinAngle) * r + (Math.random() - 0.5) * spread;
 
+          const gx = Math.floor(cx / gridCell);
+          const gz = Math.floor(cz / gridCell);
           let tooClose = false;
-          for (let pIdx = 0; pIdx < placedPlanets.length; pIdx++) {
-            const p = placedPlanets[pIdx];
-            const dx = cx - p.x;
-            const dy = cy - p.y;
-            const dz = cz - p.z;
-            const distSq = dx * dx + dy * dy + dz * dz;
-            if (p.src === entry.item.src && distSq < minSamePhotoDistSq) {
-              tooClose = true;
-              break;
-            }
-            if (distSq < minAnyPhotoDistSq) {
-              tooClose = true;
-              break;
+
+          outerLoop: for (let ox = -1; ox <= 1; ox++) {
+            for (let oz = -1; oz <= 1; oz++) {
+              const bucket = spatialGrid.get(cellKey(gx + ox, gz + oz));
+              if (!bucket) continue;
+              for (let pIdx = 0; pIdx < bucket.length; pIdx++) {
+                const p = bucket[pIdx];
+                const dx = cx - p.x;
+                const dy = cy - p.y;
+                const dz = cz - p.z;
+                const distSq = dx * dx + dy * dy + dz * dz;
+                if (p.src === entry.item.src && distSq < minSamePhotoDistSq) {
+                  tooClose = true;
+                  break outerLoop;
+                }
+                if (distSq < minAnyPhotoDistSq) {
+                  tooClose = true;
+                  break outerLoop;
+                }
+              }
             }
           }
 
@@ -795,20 +980,25 @@ export function MemoryGalaxyScene() {
           if (!tooClose) break;
         }
 
-        placedPlanets.push({ x: bestX, y: bestY, z: bestZ, src: entry.item.src });
+        const bgx = Math.floor(bestX / gridCell);
+        const bgz = Math.floor(bestZ / gridCell);
+        const k = cellKey(bgx, bgz);
+        const list = spatialGrid.get(k);
+        const pt = { x: bestX, y: bestY, z: bestZ, src: entry.item.src };
+        if (list) list.push(pt);
+        else spatialGrid.set(k, [pt]);
 
         const sprite = new THREE.Sprite(entry.mat);
         sprite.position.set(bestX, bestY, bestZ);
 
-        // Tiered planetary sizes: prominent and radiant so photos are the pure focal point
         const isHeroPlanet = i % 5 === 0;
         const baseScale = isMobile
           ? isHeroPlanet
-            ? 0.135 + Math.random() * 0.035
-            : 0.082 + Math.random() * 0.038
+            ? 0.14 + Math.random() * 0.035
+            : 0.086 + Math.random() * 0.038
           : isHeroPlanet
-            ? 0.125 + Math.random() * 0.035
-            : 0.075 + Math.random() * 0.032;
+            ? 0.13 + Math.random() * 0.035
+            : 0.078 + Math.random() * 0.032;
         sprite.scale.set(baseScale, baseScale, 1);
         sprite.userData = { src: entry.item.src };
 
@@ -822,8 +1012,12 @@ export function MemoryGalaxyScene() {
           baseScale,
           pulseSpeed: 0.9 + Math.random() * 1.1,
         });
+
+        if (i % 45 === 44) {
+          await new Promise<void>((res) => setTimeout(res, 8));
+        }
       }
-    });
+    })();
 
     // Camera entry pull-back & smooth click-focus choreography
     let introElapsed = 0;
@@ -927,21 +1121,117 @@ export function MemoryGalaxyScene() {
     canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointerup", onPointerUp);
 
+    // Lightweight WebGL 2-pass optical Gaussian blur + darkening post-process for the text overlay
+    // (avoids expensive CSS backdrop-filter; active ONLY when blurMix > 0.002)
+    let rtFull: THREE.WebGLRenderTarget | null = null;
+    let rtBlurA: THREE.WebGLRenderTarget | null = null;
+    let rtBlurB: THREE.WebGLRenderTarget | null = null;
+
+    const blurScene = new THREE.Scene();
+    const blurCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const quadGeo = new THREE.PlaneGeometry(2, 2);
+
+    const blurPassMat = new THREE.ShaderMaterial({
+      uniforms: {
+        tDiffuse: { value: null as THREE.Texture | null },
+        uTexelStep: { value: new THREE.Vector2(1 / 400, 0) },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }
+      `,
+      fragmentShader: `
+        uniform sampler2D tDiffuse;
+        uniform vec2 uTexelStep;
+        varying vec2 vUv;
+        void main() {
+          vec4 sum = texture2D(tDiffuse, vUv) * 0.227027;
+          sum += texture2D(tDiffuse, clamp(vUv + uTexelStep * 1.5, 0.0, 1.0)) * 0.1945946;
+          sum += texture2D(tDiffuse, clamp(vUv - uTexelStep * 1.5, 0.0, 1.0)) * 0.1945946;
+          sum += texture2D(tDiffuse, clamp(vUv + uTexelStep * 3.5, 0.0, 1.0)) * 0.1216216;
+          sum += texture2D(tDiffuse, clamp(vUv - uTexelStep * 3.5, 0.0, 1.0)) * 0.1216216;
+          sum += texture2D(tDiffuse, clamp(vUv + uTexelStep * 6.0, 0.0, 1.0)) * 0.0702703;
+          sum += texture2D(tDiffuse, clamp(vUv - uTexelStep * 6.0, 0.0, 1.0)) * 0.0702703;
+          gl_FragColor = sum;
+        }
+      `,
+      depthTest: false,
+      depthWrite: false,
+    });
+
+    const compositeMat = new THREE.ShaderMaterial({
+      uniforms: {
+        tSharp: { value: null as THREE.Texture | null },
+        tBlur: { value: null as THREE.Texture | null },
+        uMix: { value: 0 },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }
+      `,
+      fragmentShader: `
+        uniform sampler2D tSharp;
+        uniform sampler2D tBlur;
+        uniform float uMix;
+        varying vec2 vUv;
+        void main() {
+          vec4 sharp = texture2D(tSharp, vUv);
+          vec4 blurred = texture2D(tBlur, vUv);
+          float dist = length(vUv - vec2(0.5)) * 1.414;
+          float vig = mix(1.0, 0.55, smoothstep(0.25, 1.0, dist));
+          // Darken substantially while retaining clearly perceptible blurred Milky Way core & spiral silhouette
+          vec3 darkBlurred = blurred.rgb * 0.56 * vig;
+          vec3 darkSharp = sharp.rgb * 0.28 * vig;
+          vec3 targetBg = mix(darkSharp, darkBlurred, 0.94);
+          gl_FragColor = vec4(mix(sharp.rgb, targetBg, uMix), 1.0);
+        }
+      `,
+      depthTest: false,
+      depthWrite: false,
+    });
+
+    const postQuad = new THREE.Mesh(quadGeo, blurPassMat);
+    blurScene.add(postQuad);
+
+    const ensureBlurTargets = () => {
+      const fullW = Math.max(1, Math.round(sizes.width * Math.min(dprCap, 1.25)));
+      const fullH = Math.max(1, Math.round(sizes.height * Math.min(dprCap, 1.25)));
+      const blurW = Math.max(160, Math.round(sizes.width * 0.22));
+      const blurH = Math.max(96, Math.round(sizes.height * 0.22));
+      if (!rtFull || rtFull.width !== fullW || rtFull.height !== fullH) {
+        rtFull?.dispose();
+        rtBlurA?.dispose();
+        rtBlurB?.dispose();
+        const opts = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: true };
+        const bOpts = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false };
+        rtFull = new THREE.WebGLRenderTarget(fullW, fullH, opts);
+        rtBlurA = new THREE.WebGLRenderTarget(blurW, blurH, bOpts);
+        rtBlurB = new THREE.WebGLRenderTarget(blurW, blurH, bOpts);
+      }
+    };
+
     const onResize = () => {
       sizes.width = window.innerWidth;
       sizes.height = window.innerHeight;
       camera.aspect = sizes.width / sizes.height;
       camera.updateProjectionMatrix();
+      const nextDpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1.25 : 1.5);
       renderer.setSize(sizes.width, sizes.height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2));
+      renderer.setPixelRatio(nextDpr);
+      pointsMat.uniforms.uPixelRatio.value = nextDpr;
+      coreMat.uniforms.uPixelRatio.value = nextDpr;
+      rtFull?.dispose();
+      rtFull = null;
     };
     window.addEventListener("resize", onResize);
 
-    // Render loop
+    // Render loop (tab-visibility aware so hidden tabs pause cleanly without time jumps)
     let rafId = 0;
     let prevTime = performance.now();
+    let isTabHidden = document.hidden;
 
     const tick = (now: number) => {
+      if (isDisposed || isTabHidden) return;
       const dt = Math.min((now - prevTime) / 1000, 0.05);
       prevTime = now;
 
@@ -969,12 +1259,13 @@ export function MemoryGalaxyScene() {
       }
 
       if (!reducedMotion && !userInteracting && !focusAnim.active && !selectedOpen) {
-        // Serene cosmic spiral drift resembling a true living Milky Way
-        const rotSpeed = 0.045 * dt;
+        // Serene cosmic spiral drift + subtle star twinkle
+        const rotSpeed = 0.042 * dt;
         galaxyRoot.rotation.y += rotSpeed;
         bgStars.rotation.y += rotSpeed * 0.15;
-
         const tSec = now * 0.001;
+        pointsMat.uniforms.uTime.value = tSec;
+
         for (let i = 0; i < spriteObjects.length; i += 4) {
           const item = spriteObjects[i];
           item.sprite.position.y =
@@ -983,11 +1274,56 @@ export function MemoryGalaxyScene() {
       }
 
       if (!selectedOpen || focusAnim.active || userInteracting) {
-        renderer.render(scene, camera);
+        const blurMix = reducedMotion ? 0 : finaleVisualRef.current.blurMix;
+        if (blurMix > 0.002) {
+          ensureBlurTargets();
+          renderer.setRenderTarget(rtFull);
+          renderer.render(scene, camera);
+
+          const bw = rtBlurA!.width;
+          const bh = rtBlurA!.height;
+          postQuad.material = blurPassMat;
+          blurPassMat.uniforms.tDiffuse.value = rtFull!.texture;
+          blurPassMat.uniforms.uTexelStep.value.set(1.2 / bw, 0);
+          renderer.setRenderTarget(rtBlurA);
+          renderer.render(blurScene, blurCam);
+
+          blurPassMat.uniforms.tDiffuse.value = rtBlurA!.texture;
+          blurPassMat.uniforms.uTexelStep.value.set(0, 1.2 / bh);
+          renderer.setRenderTarget(rtBlurB);
+          renderer.render(blurScene, blurCam);
+
+          postQuad.material = compositeMat;
+          compositeMat.uniforms.tSharp.value = rtFull!.texture;
+          compositeMat.uniforms.tBlur.value = rtBlurB!.texture;
+          compositeMat.uniforms.uMix.value = blurMix;
+          renderer.setRenderTarget(null);
+          renderer.render(blurScene, blurCam);
+        } else {
+          renderer.setRenderTarget(null);
+          renderer.render(scene, camera);
+        }
       }
       rafId = requestAnimationFrame(tick);
     };
-    rafId = requestAnimationFrame(tick);
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        isTabHidden = true;
+        cancelAnimationFrame(rafId);
+      } else {
+        isTabHidden = false;
+        prevTime = performance.now();
+        if (!isDisposed) {
+          rafId = requestAnimationFrame(tick);
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    if (!isTabHidden) {
+      rafId = requestAnimationFrame(tick);
+    }
 
     const origPullBack = pullBackFromFocusRef.current;
     pullBackFromFocusRef.current = () => {
@@ -998,12 +1334,19 @@ export function MemoryGalaxyScene() {
     return () => {
       isDisposed = true;
       cancelAnimationFrame(rafId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("resize", onResize);
       canvas.removeEventListener("pointerdown", onPointerDown);
       canvas.removeEventListener("pointerup", onPointerUp);
       controls.removeEventListener("start", onControlStart);
       controls.removeEventListener("end", onControlEnd);
       controls.dispose();
+      rtFull?.dispose();
+      rtBlurA?.dispose();
+      rtBlurB?.dispose();
+      quadGeo.dispose();
+      blurPassMat.dispose();
+      compositeMat.dispose();
       pointsGeo.dispose();
       pointsMat.dispose();
       nebulaGeo.dispose();
@@ -1069,7 +1412,7 @@ export function MemoryGalaxyScene() {
         style={{ display: "block", width: "100%", height: "100%", touchAction: "none" }}
       />
 
-        {/* Poetic Exploration Caption (Visible during initial exploration & after galaxy restores) */ }
+      {/* Poetic Exploration Caption (Visible during initial exploration & after galaxy restores) */}
       {(finalePhase === 0 || finalePhase === 7) && (
         <div
           style={{
@@ -1109,21 +1452,22 @@ export function MemoryGalaxyScene() {
         </div>
       )}
 
-          {/* Unexpected Cinema Blackout & Large Glowing Finale Reveal (17.5s -> 41s, then restores galaxy) */}
+          {/* Galaxy-Embedded Luminous Finale Overlay (WebGL background blurs/darkens gently behind crisp text;
+              text fades out 0.8s earlier at 48.2s -> completely invisible as sharp galaxy restores) */}
           <div
+            key={finaleCycle}
             aria-live="polite"
             style={{
               position: "fixed",
               inset: 0,
-              background:
-                "radial-gradient(circle at center, rgba(6, 4, 14, 0.95) 0%, rgba(1, 1, 5, 0.985) 100%)",
-              backdropFilter: finalePhase >= 1 && finalePhase < 7 ? "blur(6px)" : "blur(0px)",
-              WebkitBackdropFilter: finalePhase >= 1 && finalePhase < 7 ? "blur(6px)" : "blur(0px)",
+              background: reducedMotionUI
+                ? "radial-gradient(ellipse 80% 72% at 50% 48%, rgba(5, 4, 14, 0.78) 0%, rgba(2, 2, 8, 0.92) 100%)"
+                : "radial-gradient(ellipse 85% 75% at 50% 48%, rgba(4, 3, 12, 0.16) 0%, rgba(2, 2, 8, 0.44) 100%)",
               opacity: finalePhase >= 1 && finalePhase < 7 ? 1 : 0,
               transition:
                 finalePhase === 7
-                  ? "opacity 1.8s cubic-bezier(0.22, 1, 0.36, 1)"
-                  : "opacity 1.4s cubic-bezier(0.22, 1, 0.36, 1)",
+                  ? "opacity 1.0s cubic-bezier(0.22, 1, 0.36, 1)"
+                  : "opacity 1.25s cubic-bezier(0.22, 1, 0.36, 1)",
               pointerEvents: "none",
               zIndex: 35,
               display: "flex",
@@ -1146,128 +1490,122 @@ export function MemoryGalaxyScene() {
                 }}
               >
                 {/* Beat 1: And one last thing, Gheli... */}
-                <p
+            <p
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontStyle: "italic",
+                fontSize: "clamp(1.55rem, 4.8vw, 2.65rem)",
+                fontWeight: 400,
+                color: "#FFF9F0",
+                textShadow:
+                  "0 0 22px rgba(255, 224, 165, 0.72), 0 0 44px rgba(233, 199, 125, 0.38), 0 4px 20px rgba(0, 0, 0, 0.95)",
+                lineHeight: 1.25,
+                margin: 0,
+              }}
+            >
+              <CosmicPhraseLine
+                text="And one last thing, Gheli..."
+                reducedMotion={reducedMotionUI}
+              />
+            </p>
+
+            {/* Beat 2: You don't have to remember every little thing in here. */}
+            {finalePhase >= 3 && (
+              <p
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontSize: "clamp(1.22rem, 3.6vw, 1.9rem)",
+                  fontWeight: 300,
+                  color: "#FFF4E6",
+                  textShadow:
+                    "0 0 18px rgba(255, 240, 215, 0.54), 0 0 36px rgba(217, 166, 183, 0.3), 0 3px 16px rgba(0, 0, 0, 0.95)",
+                  lineHeight: 1.4,
+                  margin: 0,
+                }}
+              >
+                <CosmicPhraseLine
+                  text="You don't have to remember every little thing in here."
+                  reducedMotion={reducedMotionUI}
+                />
+              </p>
+            )}
+
+            {/* Beat 3: Just remember that, somewhere, someone thought you were worth making an entire universe for. */}
+            {finalePhase >= 4 && (
+              <p
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontSize: "clamp(1.26rem, 3.8vw, 2.05rem)",
+                  fontWeight: 400,
+                  color: "#FFE3A3",
+                  textShadow:
+                    "0 0 22px rgba(255, 212, 125, 0.72), 0 0 48px rgba(233, 199, 125, 0.4), 0 4px 18px rgba(0, 0, 0, 0.95)",
+                  lineHeight: 1.42,
+                  margin: 0,
+                }}
+              >
+                <CosmicPhraseLine
+                  text="Just remember that, somewhere, someone thought you were worth making an entire universe for."
+                  reducedMotion={reducedMotionUI}
+                />
+              </p>
+            )}
+
+            {/* Beat 4: And I hope, whenever you look up at the stars, one of them makes you smile. */}
+            {finalePhase >= 5 && (
+              <p
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontStyle: "italic",
+                  fontSize: "clamp(1.24rem, 3.7vw, 1.98rem)",
+                  fontWeight: 300,
+                  color: "#F8D4EA",
+                  textShadow:
+                    "0 0 20px rgba(235, 165, 210, 0.65), 0 0 42px rgba(185, 117, 245, 0.35), 0 3px 18px rgba(0, 0, 0, 0.95)",
+                  lineHeight: 1.4,
+                  marginTop: "0.2rem",
+                  marginBottom: 0,
+                }}
+              >
+                <CosmicPhraseLine
+                  text="And I hope, whenever you look up at the stars, one of them makes you smile."
+                  reducedMotion={reducedMotionUI}
+                />
+              </p>
+            )}
+
+            {/* Beat 5: Authentic Handwritten Continuous Ink Signature ("Umar") */}
+            {finalePhase >= 6 && (
+              <div
+                style={{
+                  marginTop: "0.55rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "0.2rem",
+                }}
+              >
+                <span
+                  aria-hidden="true"
                   style={{
-                    fontFamily: "var(--font-serif)",
-                    fontStyle: "italic",
-                    fontSize: "clamp(1.55rem, 4.8vw, 2.65rem)",
-                    fontWeight: 400,
-                    color: "#FFF9F0",
-                    textShadow:
-                      "0 0 22px rgba(255, 224, 165, 0.78), 0 0 48px rgba(233, 199, 125, 0.45), 0 4px 20px rgba(0, 0, 0, 0.95)",
-                    lineHeight: 1.25,
-                    margin: 0,
+                    fontSize: "1.02rem",
+                    color: "#FFE3A3",
+                    textShadow: "0 0 18px rgba(255, 215, 130, 0.85)",
+                    letterSpacing: "0.35em",
+                    opacity: reducedMotionUI ? 1 : 0,
+                    animation: reducedMotionUI
+                      ? undefined
+                      : "galaxyPhraseRise 0.8s ease forwards",
                   }}
                 >
-                  <SelfWritingLine text="And one last thing, Gheli..." charStepMs={55} />
-                </p>
-
-                {/* Beat 2: You don't have to remember every little thing in here. */}
-                {finalePhase >= 3 && (
-                  <p
-                    style={{
-                      fontFamily: "var(--font-serif)",
-                      fontSize: "clamp(1.22rem, 3.6vw, 1.9rem)",
-                      fontWeight: 300,
-                      color: "#FFF4E6",
-                      textShadow:
-                        "0 0 18px rgba(255, 240, 215, 0.58), 0 0 38px rgba(217, 166, 183, 0.35), 0 3px 16px rgba(0, 0, 0, 0.95)",
-                      lineHeight: 1.4,
-                      margin: 0,
-                    }}
-                  >
-                    <SelfWritingLine
-                      text="You don't have to remember every little thing in here."
-                      charStepMs={50}
-                    />
-                  </p>
-                )}
-
-                {/* Beat 3: Just remember that, somewhere, someone thought you were worth making an entire universe for. */}
-                {finalePhase >= 4 && (
-                  <p
-                    style={{
-                      fontFamily: "var(--font-serif)",
-                      fontSize: "clamp(1.26rem, 3.8vw, 2.05rem)",
-                      fontWeight: 400,
-                      color: "#FFE3A3",
-                      textShadow:
-                        "0 0 24px rgba(255, 212, 125, 0.8), 0 0 54px rgba(233, 199, 125, 0.48), 0 4px 18px rgba(0, 0, 0, 0.95)",
-                      lineHeight: 1.42,
-                      margin: 0,
-                    }}
-                  >
-                    <SelfWritingLine
-                      text="Just remember that, somewhere, someone thought you were worth making an entire universe for."
-                      charStepMs={46}
-                    />
-                  </p>
-                )}
-
-                {/* Beat 4: And I hope, whenever you look up at the stars, one of them makes you smile. */}
-                {finalePhase >= 5 && (
-                  <p
-                    style={{
-                      fontFamily: "var(--font-serif)",
-                      fontStyle: "italic",
-                      fontSize: "clamp(1.24rem, 3.7vw, 1.98rem)",
-                      fontWeight: 300,
-                      color: "#F8D4EA",
-                      textShadow:
-                        "0 0 22px rgba(235, 165, 210, 0.72), 0 0 46px rgba(185, 117, 245, 0.42), 0 3px 18px rgba(0, 0, 0, 0.95)",
-                      lineHeight: 1.4,
-                      marginTop: "0.2rem",
-                      marginBottom: 0,
-                    }}
-                  >
-                    <SelfWritingLine
-                      text="And I hope, whenever you look up at the stars, one of them makes you smile."
-                      charStepMs={46}
-                    />
-                  </p>
-                )}
-
-                {/* Beat 5: Glowing Sign-off */}
-                {finalePhase >= 6 && (
-                  <div
-                    style={{
-                      marginTop: "0.65rem",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: "0.35rem",
-                    }}
-                  >
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        fontSize: "1.05rem",
-                        color: "#FFE3A3",
-                        textShadow: "0 0 18px rgba(255, 215, 130, 0.85)",
-                        letterSpacing: "0.35em",
-                        animation: "galaxySignatureReveal 0.9s ease forwards",
-                      }}
-                    >
-                      ✦
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: "var(--font-serif)",
-                        fontStyle: "italic",
-                        fontSize: "clamp(1.75rem, 5.4vw, 2.8rem)",
-                        letterSpacing: "0.1em",
-                        color: "#FFE7AE",
-                        textShadow:
-                          "0 0 26px rgba(255, 215, 130, 0.9), 0 0 56px rgba(233, 199, 125, 0.55), 0 4px 18px rgba(0, 0, 0, 0.98)",
-                      }}
-                    >
-                      <SelfWritingLine text="— Umar" charStepMs={115} />
-                    </span>
-                  </div>
-                )}
+                  ✦
+                </span>
+                <UmarSignatureSvg reducedMotion={reducedMotionUI} />
               </div>
+            )}
+          </div>
         )}
-        </div>
+      </div>
 
       {/* Galaxy Controls */}
       <div
@@ -1371,33 +1709,30 @@ export function MemoryGalaxyScene() {
             transform: translateY(0);
           }
         }
-        @keyframes galaxyCharWrite {
+        @keyframes galaxyPhraseRise {
           0% {
             opacity: 0;
-            transform: translateY(6px) scale(0.92);
-            filter: blur(5px);
-          }
-          65% {
-            opacity: 1;
-            transform: translateY(-1px) scale(1.03);
-            filter: blur(0px);
+            transform: translate3d(0, 12px, 0);
           }
           100% {
             opacity: 1;
-            transform: translateY(0) scale(1);
-            filter: blur(0px);
+            transform: translate3d(0, 0, 0);
           }
         }
-        @keyframes galaxySignatureReveal {
+        @keyframes umarSignatureDraw {
           0% {
-            opacity: 0;
-            transform: scale(0.88) translateY(12px);
-            filter: blur(8px);
+            stroke-dashoffset: 720;
           }
           100% {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-            filter: blur(0px);
+            stroke-dashoffset: 0;
+          }
+        }
+        @keyframes umarSweepDraw {
+          0% {
+            stroke-dashoffset: 160;
+          }
+          100% {
+            stroke-dashoffset: 0;
           }
         }
       `}</style>
