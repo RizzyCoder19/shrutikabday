@@ -333,11 +333,11 @@ export function GirlBehindNameScene() {
         const p = morph.progress;
         const { cx, cy, spanW, spanH, slots } = metrics;
 
-        // 1. Precision Laser Calibration Sweep across GHELI (p: 0.00 -> 0.24)
-        if (p < 0.26) {
-          const scanK = power3InOut(p / 0.22);
-          const scanX = cx - spanW * 0.62 + spanW * 1.24 * scanK;
-          const scanAlpha = Math.sin(clamp01(p / 0.24) * Math.PI) * 0.85;
+        // 1. Slow Precision Laser Calibration Sweep across GHELI (p: 0.00 -> 0.28)
+        if (p < 0.3) {
+          const scanK = power3InOut(p / 0.26);
+          const scanX = cx - spanW * 0.6 + spanW * 1.2 * scanK;
+          const scanAlpha = Math.sin(clamp01(p / 0.28) * Math.PI) * 0.85;
 
           const grad = ctx.createLinearGradient(scanX, cy - spanH * 0.9, scanX, cy + spanH * 0.9);
           grad.addColorStop(0, "transparent");
@@ -352,13 +352,13 @@ export function GirlBehindNameScene() {
           ctx.stroke();
         }
 
-        // 2. Twin Counter-Rotating Precision Watchmaker Escapement Arcs & Calipers (p: 0.06 -> 0.86)
-        const rigAlpha = smoothstep(0.05, 0.16, p) * (1 - smoothstep(0.72, 0.88, p));
+        // 2. Twin Counter-Rotating Precision Watchmaker Escapement Arcs & Calipers (p: 0.06 -> 0.88)
+        const rigAlpha = smoothstep(0.05, 0.16, p) * (1 - smoothstep(0.75, 0.9, p));
         if (rigAlpha > 0.01) {
           const rOuter = Math.min(w * 0.34, Math.max(spanW * 0.44, 155));
           const rInner = rOuter * 0.72;
-          const rotA = p * Math.PI * 1.65;
-          const rotB = -p * Math.PI * 2.1;
+          const rotA = p * Math.PI * 1.25;
+          const rotB = -p * Math.PI * 1.6;
 
           // Horizontal calibrated datum hairline
           ctx.globalAlpha = rigAlpha * 0.28;
@@ -403,46 +403,47 @@ export function GirlBehindNameScene() {
           }
         }
 
-        // 3. Quantized High-Torque Typographic Particles & Vector Filaments
+        // 3. Slow-Paced Breaking -> Orbiting -> Reconstructing Typographic Particles
         for (let i = 0; i < particles.length; i++) {
           const pt = particles[i];
 
-          // Strict left-to-right mechanical unlock & tumbler assembly cadence
-          const startShift = pt.srcOrder * 0.16;
-          const endShift = (1 - pt.dstOrder) * 0.18;
+          // Clearly staged per-letter fracture (G->I) & slow letter-by-letter rebuild (S->I)
+          const startShift = pt.srcOrder * 0.22;
+          const endShift = (1 - pt.dstOrder) * 0.26;
           const u = smoothstep(startShift, 1 - endShift, p);
+          if (u <= 0.002) continue;
 
-          const fadeIn = smoothstep(0.0, 0.08, p);
-          const fadeOut = 1 - smoothstep(0.84, 0.99, p);
+          const fadeIn = smoothstep(startShift, startShift + 0.06, p);
+          const fadeOut = 1 - smoothstep(0.86, 0.995, p);
           const alpha = fadeIn * fadeOut;
           if (alpha <= 0.005) continue;
 
           const pos = evalMechanicalPos(pt, u, metrics);
-          const prevPos = evalMechanicalPos(pt, Math.max(0, u - 0.055), metrics);
+          const prevPos = evalMechanicalPos(pt, Math.max(0, u - 0.048), metrics);
           const scale = 1 + 0.32 * Math.sin(u * Math.PI) * (pt.depth - 0.65);
 
           // Crisp razor vector filament trails during torque rotation & lock-in
           if (u > 0.02 && u < 0.97) {
-            ctx.globalAlpha = alpha * 0.48;
-            ctx.strokeStyle = pt.isGold ? "#E9C77D" : "#FBF5EC";
-            ctx.lineWidth = Math.max(0.7, pt.size * 0.58);
+            ctx.globalAlpha = alpha * 0.46;
+            ctx.strokeStyle = pt.isGold ? "#E9C77D" : "#F5ECE0";
+            ctx.lineWidth = Math.max(0.7, pt.size * 0.56);
             ctx.beginPath();
             ctx.moveTo(prevPos.x, prevPos.y);
             ctx.lineTo(pos.x, pos.y);
             ctx.stroke();
           }
 
-          ctx.globalAlpha = alpha * 0.95;
+          ctx.globalAlpha = alpha * 0.94;
           ctx.fillStyle = pt.isGold ? "#E9C77D" : "#FBF5EC";
           ctx.beginPath();
           ctx.arc(pos.x, pos.y, pt.size * scale, 0, Math.PI * 2);
           ctx.fill();
         }
 
-        // 4. Precision Slot-Lock Aperture Flash + Final Baseline Shockline (p: 0.64 -> 0.99)
-        if (p > 0.63 && slots.length > 0) {
+        // 4. Slow Rhythmic Slot-Lock Aperture Flash + Final Baseline Shockline (p: 0.56 -> 0.99)
+        if (p > 0.55 && slots.length > 0) {
           slots.forEach((slot, sIdx) => {
-            const lockStart = 0.65 + sIdx * 0.042;
+            const lockStart = 0.58 + sIdx * 0.056;
             const localP = (p - lockStart) / 0.12;
             if (localP > 0 && localP < 1) {
               const flashA = Math.sin(localP * Math.PI) * 0.85;
@@ -465,9 +466,9 @@ export function GirlBehindNameScene() {
           });
         }
 
-        // Sexy champagne velvet horizontal shockwave as final I snaps locked (p: 0.86 -> 0.99)
-        if (p > 0.86) {
-          const waveK = (p - 0.86) / 0.13;
+        // Velvet horizontal champagne shockwave as final I locks cleanly (p: 0.88 -> 0.995)
+        if (p > 0.88) {
+          const waveK = (p - 0.88) / 0.115;
           const waveAlpha = (1 - waveK) * 0.72;
           const halfRay = spanW * (0.2 + 0.72 * power3InOut(waveK));
           const beamGrad = ctx.createLinearGradient(cx - halfRay, cy, cx + halfRay, cy);
@@ -668,8 +669,8 @@ export function GirlBehindNameScene() {
       );
     });
 
-    // Brief interactive pause on complete GHELI composition before particle morph
-    tl.to({}, { duration: 1.5 });
+    // Comfortable interactive pause so viewer can hover & click GHELI letters before transformation
+    tl.to({}, { duration: 2.2 });
 
     // ─── ACT IV — DRAMATIC MECHANICAL & SEXY ESCAPEMENT MORPH (GHELI -> SHRUTI) ───
     // Sudden unexpected tension lock: spotlight tightens and GHELI snaps crisply to zero-datum
@@ -742,55 +743,59 @@ export function GirlBehindNameScene() {
       tl.to(hintRef.current, { opacity: 0, duration: 0.25, ease: "power2.out" }, "<");
     }
 
-    // Phase A -> B -> C driven deterministically from named timeline label
+    // Phase A -> B -> C driven deterministically across a slow, unhurried 6.1s mechanical cadence
     tl.addLabel("morphStart");
 
     tl.to(
       morphDriverRef.current,
       {
         progress: 1,
-        duration: 3.3,
-        ease: "power3.inOut",
+        duration: 6.1,
+        ease: "power2.inOut",
       },
       "morphStart"
     );
 
-    // Hide GHELI DOM row cleanly right as laser slice dissolves the wordmark (zero ghost glyphs)
+    // Phase A — Letters visibly fracture & peel away one by one left-to-right (G -> H -> E -> L -> I)
+    tl.to(
+      letterBtnRefs.current.filter(Boolean),
+      {
+        opacity: 0,
+        y: -8,
+        scale: 0.94,
+        duration: 0.45,
+        stagger: 0.26,
+        ease: "power2.in",
+      },
+      "morphStart+=0.12"
+    );
+
     if (gheliRowRef.current) {
-      tl.to(
+      tl.set(
         gheliRowRef.current,
-        {
-          opacity: 0,
-          duration: 0.28,
-          ease: "power3.in",
-          onComplete: () => {
-            if (gheliRowRef.current) {
-              gheliRowRef.current.style.visibility = "hidden";
-            }
-          },
-        },
-        "morphStart+=0.14"
+        { opacity: 0, visibility: "hidden" },
+        "morphStart+=1.7"
       );
     }
 
-    // Reveal SHRUTI container cleanly for rhythmic mechanical tumbler slot-lock cadence
+    // Reveal SHRUTI container cleanly for slow letter-by-letter mechanical slot reconstruction
     if (shrutiRowRef.current) {
-      tl.set(shrutiRowRef.current, { opacity: 1, visibility: "visible" }, "morphStart+=2.18");
+      tl.set(shrutiRowRef.current, { opacity: 1, visibility: "visible" }, "morphStart+=3.55");
     }
 
-    // Crisp mechanical vertical slot-lock snap into final editorial baseline (zero leftover offset)
+    // Slow paced slot-by-slot reconstruction into final editorial baseline (zero leftover offset)
     tl.fromTo(
       shrutiLetterRefs.current.filter(Boolean),
-      { opacity: 0, y: -15, scaleY: 1.07 },
+      { opacity: 0, y: -14, scaleY: 1.06 },
       {
         opacity: 1,
         y: 0,
         scaleY: 1,
-        duration: 0.28,
-        stagger: 0.095,
-        ease: "power4.out",
+        duration: 0.62,
+        stagger: 0.34,
+        ease: "power3.out",
       },
-      "morphStart+=2.22"
+      "morphStart+=3.6"
     );
 
     // Velvet spotlight release + deterministic wipe of all temporary canvas morph buffers
@@ -800,10 +805,10 @@ export function GirlBehindNameScene() {
         {
           scale: 1,
           opacity: 1,
-          duration: 1.15,
+          duration: 1.35,
           ease: "power2.out",
         },
-        "morphStart+=3.05"
+        "morphStart+=5.5"
       );
     }
 
@@ -819,7 +824,7 @@ export function GirlBehindNameScene() {
         }
       },
       [],
-      "morphStart+=3.42"
+      "morphStart+=6.2"
     );
 
     // ─── ACT V — RECOGNIZABLE DARK-PLUM PORTRAIT CAMOUFLAGE (ONLY AFTER SHRUTI LOCKS) ───
@@ -883,17 +888,20 @@ export function GirlBehindNameScene() {
       gsap.killTweensOf(body);
       if (entering) {
         gsap.to(body, {
-          y: -6,
-          scale: 1.04,
-          duration: 0.32,
+          y: -12,
+          z: 24,
+          rotateX: 8,
+          rotateY: (index - 2) * 3.5,
+          scale: 1.09,
+          duration: 0.34,
           ease: "power2.out",
         });
 
         const cluster = getNearbyBotanicalCluster(index);
         if (cluster) {
           gsap.to(cluster, {
-            rotation: index % 2 === 0 ? -3 : 3,
-            scale: 1.04,
+            rotation: index % 2 === 0 ? -4 : 4,
+            scale: 1.07,
             duration: 0.45,
             ease: "sine.out",
             transformOrigin: "50% 50%",
@@ -902,8 +910,11 @@ export function GirlBehindNameScene() {
       } else {
         gsap.to(body, {
           y: 0,
+          z: 0,
+          rotateX: 0,
+          rotateY: 0,
           scale: 1,
-          duration: 0.45,
+          duration: 0.48,
           ease: "power2.out",
         });
 
@@ -943,33 +954,47 @@ export function GirlBehindNameScene() {
         gsap.killTweensOf(ripple);
         gsap.fromTo(
           ripple,
-          { scale: 0.45, opacity: 0.6 },
-          { scale: 1.9, opacity: 0, duration: 0.72, ease: "power2.out" }
+          { scale: 0.45, opacity: 0.78 },
+          { scale: 2.15, opacity: 0, duration: 0.8, ease: "power2.out" }
         );
       }
 
       gsap.killTweensOf(body);
       gsap.fromTo(
         body,
-        { y: -4, scale: 1.06 },
-        { y: 0, scale: 1, duration: 0.6, ease: "power2.out" }
+        { y: -16, z: 30, rotateX: 10, scale: 1.13 },
+        { y: -8, z: 14, rotateX: 4, scale: 1.05, duration: 0.55, ease: "back.out(1.7)" }
       );
+
+      const cluster = getNearbyBotanicalCluster(index);
+      if (cluster) {
+        gsap.to(cluster, {
+          scale: 1.1,
+          duration: 0.3,
+          yoyo: true,
+          repeat: 1,
+          ease: "sine.inOut",
+          transformOrigin: "50% 50%",
+        });
+      }
 
       if (currentTaps % 3 === 0) {
         letterBodyRefs.current.forEach((other, j) => {
           if (!other || j === index) return;
           gsap.to(other, {
-            y: -8,
-            duration: 0.22,
+            y: -14,
+            z: 22,
+            rotateY: (j - index) * 4.5,
+            duration: 0.24,
             yoyo: true,
             repeat: 1,
-            delay: Math.abs(j - index) * 0.055,
+            delay: Math.abs(j - index) * 0.06,
             ease: "sine.inOut",
           });
         });
       }
     },
-    [soundEnabled]
+    [getNearbyBotanicalCluster, soundEnabled]
   );
 
   const handleContinue = () => {
