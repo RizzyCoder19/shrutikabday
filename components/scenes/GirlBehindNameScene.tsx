@@ -34,12 +34,22 @@ interface MorphParticle {
   ty: number;
   cx: number;
   cy: number;
+  orbitR: number;
+  orbitAngle: number;
   srcOrder: number;
   dstOrder: number;
   size: number;
   depth: number;
   phaseOffset: number;
   isGold: boolean;
+}
+
+interface MorphStageMetrics {
+  cx: number;
+  cy: number;
+  spanW: number;
+  spanH: number;
+  slots: Array<{ cx: number; cy: number; w: number; h: number }>;
 }
 
 function sampleGlyphPixels(
@@ -116,11 +126,12 @@ function buildParticleSet(
   srcPts: Array<{ x: number; y: number; letterIdx: number }>,
   dstPts: Array<{ x: number; y: number; letterIdx: number }>,
   viewportW: number,
-  viewportH: number
+  stageCx: number,
+  stageCy: number
 ): MorphParticle[] {
   if (srcPts.length === 0 || dstPts.length === 0) return [];
 
-  const maxCount = viewportW < 520 ? 320 : 520;
+  const maxCount = viewportW < 520 ? 360 : 580;
   const targetCount = Math.min(maxCount, Math.max(srcPts.length, dstPts.length));
 
   // Resample evenly while preserving glyph spatial ordering
@@ -136,20 +147,22 @@ function buildParticleSet(
   const sList = resample(srcPts, targetCount);
   const dList = resample(dstPts, targetCount);
 
-  const stageCx = viewportW / 2;
-  const stageCy = (srcPts[0].y + dList[0].y) * 0.5 || viewportH * 0.45;
   const particles: MorphParticle[] = [];
+  const baseRadius = Math.min(viewportW * 0.22, 138);
 
   for (let i = 0; i < targetCount; i++) {
     const s = sList[i];
     const d = dList[i];
-    const norm = i / Math.max(1, targetCount - 1);
 
-    // Coherent upward-and-inward orbital arc across composition
-    const arcLift = -Math.min(72, viewportH * 0.085) * (0.45 + 0.55 * Math.sin(norm * Math.PI));
-    const orbitSide = (s.x - stageCx) * 0.14;
-    const cx = (s.x + d.x) * 0.5 + orbitSide;
-    const cy = Math.min(s.y, d.y, stageCy) + arcLift + (d.letterIdx % 2 === 0 ? -10 : 12);
+    // Quantized mechanical control anchor + helical astrolabe orbit angle
+    const dx = (s.x + d.x) * 0.5 - stageCx;
+    const dy = (s.y + d.y) * 0.5 - stageCy;
+    const orbitAngle = Math.atan2(dy, dx) + (i % 5) * 0.14;
+    const ringBand = i % 3 === 0 ? 0.58 : i % 3 === 1 ? 0.92 : 1.18;
+    const orbitR = baseRadius * ringBand + ((i * 11) % 18);
+
+    const cx = stageCx + Math.cos(orbitAngle) * orbitR;
+    const cy = stageCy + Math.sin(orbitAngle) * (orbitR * 0.42);
 
     particles.push({
       sx: s.x,
@@ -158,12 +171,14 @@ function buildParticleSet(
       ty: d.y,
       cx,
       cy,
+      orbitR,
+      orbitAngle,
       srcOrder: s.letterIdx / Math.max(1, WORD_LETTERS.length - 1),
       dstOrder: d.letterIdx / Math.max(1, TARGET_LETTERS.length - 1),
-      size: 1.05 + ((i * 17) % 10) * 0.11,
-      depth: 0.78 + ((i * 23) % 10) * 0.055,
+      size: 0.95 + ((i * 17) % 10) * 0.1,
+      depth: 0.8 + ((i * 23) % 10) * 0.055,
       phaseOffset: ((i * 13) % 20) / 20,
-      isGold: i % 4 === 0,
+      isGold: i % 3 === 0,
     });
   }
 
@@ -215,6 +230,7 @@ export function GirlBehindNameScene() {
   // Deterministic particle engine shared state (single canvas owner)
   const morphDriverRef = useRef({ progress: 0, active: false });
   const morphParticlesRef = useRef<MorphParticle[]>([]);
+  const morphMetricsRef = useRef<MorphStageMetrics | null>(null);
 
   // ─── 1. Single Atmospheric Dust & Morph Particle Canvas ───
   useEffect(() => {
@@ -254,12 +270,36 @@ export function GirlBehindNameScene() {
       const t = clamp01((x - e0) / (e1 - e0));
       return t * t * (3 - 2 * t);
     };
+    const power3InOut = (x: number) => {
+      const t = clamp01(x);
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    };
 
-    const evalCurve = (p: MorphParticle, u: number) => {
-      const inv = 1 - u;
+    const evalMechanicalPos = (p: MorphParticle, u: number, m: MorphStageMetrics) => {
+      // Three-stage mechanical trajectory:
+      // 0..0.38 -> snap from source glyph onto rotating elliptical watchmaker escapement track
+      // 0.38..0.68 -> whip cleanly through calibrated high-torque rotation
+      // 0.68..1.00 -> crisp tangential magnetic vector lock onto target glyph coordinates
+      const swirlAngle = p.orbitAngle + u * Math.PI * 1.45;
+      const orbitX = m.cx + Math.cos(swirlAngle) * p.orbitR;
+      const orbitY = m.cy + Math.sin(swirlAngle) * (p.orbitR * 0.36);
+
+      if (u < 0.42) {
+        const k = power3InOut(u / 0.42);
+        return {
+          x: p.sx + (orbitX - p.sx) * k,
+          y: p.sy + (orbitY - p.sy) * k,
+        };
+      }
+      if (u < 0.62) {
+        return { x: orbitX, y: orbitY };
+      }
+      const k = power3InOut((u - 0.62) / 0.38);
+      // Slight vertical slot-drop bias right before locking into SHRUTI letter
+      const dropBias = Math.sin(k * Math.PI) * -10 * (1 - k);
       return {
-        x: inv * inv * p.sx + 2 * inv * u * p.cx + u * u * p.tx,
-        y: inv * inv * p.sy + 2 * inv * u * p.cy + u * u * p.ty,
+        x: orbitX + (p.tx - orbitX) * k,
+        y: orbitY + (p.ty - orbitY) * k + dropBias,
       };
     };
 
@@ -285,45 +325,162 @@ export function GirlBehindNameScene() {
         ctx.fill();
       }
 
-      // Deterministic GHELI -> SHRUTI Typographic Particle Transformation
+      // Deterministic Mechanical-Luxury GHELI -> SHRUTI Morph Layer
       const morph = morphDriverRef.current;
       const particles = morphParticlesRef.current;
-      if (morph.active && particles.length > 0) {
+      const metrics = morphMetricsRef.current;
+      if (morph.active && particles.length > 0 && metrics) {
         const p = morph.progress;
+        const { cx, cy, spanW, spanH, slots } = metrics;
 
+        // 1. Precision Laser Calibration Sweep across GHELI (p: 0.00 -> 0.24)
+        if (p < 0.26) {
+          const scanK = power3InOut(p / 0.22);
+          const scanX = cx - spanW * 0.62 + spanW * 1.24 * scanK;
+          const scanAlpha = Math.sin(clamp01(p / 0.24) * Math.PI) * 0.85;
+
+          const grad = ctx.createLinearGradient(scanX, cy - spanH * 0.9, scanX, cy + spanH * 0.9);
+          grad.addColorStop(0, "transparent");
+          grad.addColorStop(0.5, "rgba(255, 245, 224, 0.95)");
+          grad.addColorStop(1, "transparent");
+          ctx.globalAlpha = scanAlpha;
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.moveTo(scanX, cy - spanH * 0.95);
+          ctx.lineTo(scanX, cy + spanH * 0.95);
+          ctx.stroke();
+        }
+
+        // 2. Twin Counter-Rotating Precision Watchmaker Escapement Arcs & Calipers (p: 0.06 -> 0.86)
+        const rigAlpha = smoothstep(0.05, 0.16, p) * (1 - smoothstep(0.72, 0.88, p));
+        if (rigAlpha > 0.01) {
+          const rOuter = Math.min(w * 0.34, Math.max(spanW * 0.44, 155));
+          const rInner = rOuter * 0.72;
+          const rotA = p * Math.PI * 1.65;
+          const rotB = -p * Math.PI * 2.1;
+
+          // Horizontal calibrated datum hairline
+          ctx.globalAlpha = rigAlpha * 0.28;
+          ctx.strokeStyle = "#E9C77D";
+          ctx.lineWidth = 0.75;
+          ctx.beginPath();
+          ctx.moveTo(cx - spanW * 0.68, cy);
+          ctx.lineTo(cx + spanW * 0.68, cy);
+          ctx.stroke();
+
+          // Outer broken mechanical ring arcs
+          ctx.strokeStyle = "#E9C77D";
+          ctx.lineWidth = 0.9;
+          ctx.globalAlpha = rigAlpha * 0.42;
+          for (let seg = 0; seg < 4; seg++) {
+            const a0 = rotA + (seg * Math.PI) / 2 + 0.18;
+            ctx.beginPath();
+            ctx.arc(cx, cy, rOuter, a0, a0 + Math.PI / 2 - 0.36);
+            ctx.stroke();
+          }
+
+          // Inner fine ivory counter-rotating arc + degree ticks
+          ctx.strokeStyle = "#F5ECE0";
+          ctx.lineWidth = 0.7;
+          ctx.globalAlpha = rigAlpha * 0.32;
+          for (let seg = 0; seg < 3; seg++) {
+            const a0 = rotB + (seg * Math.PI * 2) / 3 + 0.22;
+            ctx.beginPath();
+            ctx.arc(cx, cy, rInner, a0, a0 + (Math.PI * 2) / 3 - 0.44);
+            ctx.stroke();
+          }
+
+          // Radial precision ticks on outer ring
+          ctx.globalAlpha = rigAlpha * 0.46;
+          for (let tIdx = 0; tIdx < 24; tIdx++) {
+            const ta = rotA * 0.5 + (tIdx * Math.PI * 2) / 24;
+            const len = tIdx % 3 === 0 ? 7 : 3.5;
+            ctx.beginPath();
+            ctx.moveTo(cx + Math.cos(ta) * (rOuter - len), cy + Math.sin(ta) * (rOuter - len));
+            ctx.lineTo(cx + Math.cos(ta) * (rOuter + 2), cy + Math.sin(ta) * (rOuter + 2));
+            ctx.stroke();
+          }
+        }
+
+        // 3. Quantized High-Torque Typographic Particles & Vector Filaments
         for (let i = 0; i < particles.length; i++) {
           const pt = particles[i];
 
-          // Staggered spatial timing so dissolution & assembly sweep gracefully left-to-right
-          const startShift = pt.srcOrder * 0.14;
-          const endShift = (1 - pt.dstOrder) * 0.12;
+          // Strict left-to-right mechanical unlock & tumbler assembly cadence
+          const startShift = pt.srcOrder * 0.16;
+          const endShift = (1 - pt.dstOrder) * 0.18;
           const u = smoothstep(startShift, 1 - endShift, p);
 
-          const fadeIn = smoothstep(0.0, 0.1, p);
+          const fadeIn = smoothstep(0.0, 0.08, p);
           const fadeOut = 1 - smoothstep(0.84, 0.99, p);
           const alpha = fadeIn * fadeOut;
           if (alpha <= 0.005) continue;
 
-          const pos = evalCurve(pt, u);
-          const prevPos = evalCurve(pt, Math.max(0, u - 0.045));
-          const midArcScale = 1 + 0.35 * Math.sin(u * Math.PI) * (pt.depth - 0.65);
+          const pos = evalMechanicalPos(pt, u, metrics);
+          const prevPos = evalMechanicalPos(pt, Math.max(0, u - 0.055), metrics);
+          const scale = 1 + 0.32 * Math.sin(u * Math.PI) * (pt.depth - 0.65);
 
-          // Fine directional luminous trail during active orbital sweep
-          if (u > 0.03 && u < 0.96) {
-            ctx.globalAlpha = alpha * 0.36;
-            ctx.strokeStyle = pt.isGold ? "#E9C77D" : "#F5ECE0";
-            ctx.lineWidth = Math.max(0.65, pt.size * 0.55);
+          // Crisp razor vector filament trails during torque rotation & lock-in
+          if (u > 0.02 && u < 0.97) {
+            ctx.globalAlpha = alpha * 0.48;
+            ctx.strokeStyle = pt.isGold ? "#E9C77D" : "#FBF5EC";
+            ctx.lineWidth = Math.max(0.7, pt.size * 0.58);
             ctx.beginPath();
             ctx.moveTo(prevPos.x, prevPos.y);
             ctx.lineTo(pos.x, pos.y);
             ctx.stroke();
           }
 
-          ctx.globalAlpha = alpha * 0.92;
+          ctx.globalAlpha = alpha * 0.95;
           ctx.fillStyle = pt.isGold ? "#E9C77D" : "#FBF5EC";
           ctx.beginPath();
-          ctx.arc(pos.x, pos.y, pt.size * midArcScale, 0, Math.PI * 2);
+          ctx.arc(pos.x, pos.y, pt.size * scale, 0, Math.PI * 2);
           ctx.fill();
+        }
+
+        // 4. Precision Slot-Lock Aperture Flash + Final Baseline Shockline (p: 0.64 -> 0.99)
+        if (p > 0.63 && slots.length > 0) {
+          slots.forEach((slot, sIdx) => {
+            const lockStart = 0.65 + sIdx * 0.042;
+            const localP = (p - lockStart) / 0.12;
+            if (localP > 0 && localP < 1) {
+              const flashA = Math.sin(localP * Math.PI) * 0.85;
+              const tickHalf = (slot.h * 0.62) * (1 - localP * 0.35);
+              ctx.globalAlpha = flashA;
+              ctx.strokeStyle = "#E9C77D";
+              ctx.lineWidth = 1.1;
+              ctx.beginPath();
+              ctx.moveTo(slot.cx, slot.cy - tickHalf);
+              ctx.lineTo(slot.cx, slot.cy + tickHalf);
+              ctx.stroke();
+
+              // Crisp horizontal caliper snap bar beneath locked slot
+              const barW = slot.w * (0.45 + 0.55 * (1 - localP));
+              ctx.beginPath();
+              ctx.moveTo(slot.cx - barW * 0.5, slot.cy + slot.h * 0.56);
+              ctx.lineTo(slot.cx + barW * 0.5, slot.cy + slot.h * 0.56);
+              ctx.stroke();
+            }
+          });
+        }
+
+        // Sexy champagne velvet horizontal shockwave as final I snaps locked (p: 0.86 -> 0.99)
+        if (p > 0.86) {
+          const waveK = (p - 0.86) / 0.13;
+          const waveAlpha = (1 - waveK) * 0.72;
+          const halfRay = spanW * (0.2 + 0.72 * power3InOut(waveK));
+          const beamGrad = ctx.createLinearGradient(cx - halfRay, cy, cx + halfRay, cy);
+          beamGrad.addColorStop(0, "transparent");
+          beamGrad.addColorStop(0.5, "rgba(233, 199, 125, 0.95)");
+          beamGrad.addColorStop(1, "transparent");
+          ctx.globalAlpha = waveAlpha;
+          ctx.strokeStyle = beamGrad;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(cx - halfRay, cy);
+          ctx.lineTo(cx + halfRay, cy);
+          ctx.stroke();
         }
       }
 
@@ -401,6 +558,7 @@ export function GirlBehindNameScene() {
     morphDriver.progress = 0;
     morphDriver.active = false;
     morphParticlesRef.current = [];
+    morphMetricsRef.current = null;
 
     const tl = gsap.timeline();
 
@@ -513,13 +671,23 @@ export function GirlBehindNameScene() {
     // Brief interactive pause on complete GHELI composition before particle morph
     tl.to({}, { duration: 1.5 });
 
-    // ─── ACT IV — DETERMINISTIC TYPOGRAPHIC PARTICLE TRANSFORMATION (GHELI -> SHRUTI) ───
+    // ─── ACT IV — DRAMATIC MECHANICAL & SEXY ESCAPEMENT MORPH (GHELI -> SHRUTI) ───
+    // Sudden unexpected tension lock: spotlight tightens and GHELI snaps crisply to zero-datum
+    if (spotlightRef.current) {
+      tl.to(spotlightRef.current, {
+        scale: 0.86,
+        opacity: 0.72,
+        duration: 0.24,
+        ease: "power4.out",
+      });
+    }
+
     tl.call(() => {
       transformLockedRef.current = true;
       setIsTransforming(true);
       setActiveIdx(null);
 
-      // Kill all active float/hover tweens and snap GHELI to aligned baseline before sampling
+      // Kill all float/hover tweens cleanly and snap GHELI onto a rigid horizontal datum
       letterBodyRefs.current.forEach((b) => {
         if (b) {
           gsap.killTweensOf(b);
@@ -529,15 +697,49 @@ export function GirlBehindNameScene() {
 
       const vw = window.innerWidth;
       const vh = window.innerHeight;
+      const rowRect = gheliRowRef.current?.getBoundingClientRect();
+      const shrutiRect = shrutiRowRef.current?.getBoundingClientRect();
+      const stageCx =
+        rowRect && rowRect.width > 0 ? rowRect.left + rowRect.width / 2 : vw / 2;
+      const stageCy =
+        rowRect && rowRect.height > 0 ? rowRect.top + rowRect.height / 2 : vh * 0.45;
+      const spanW = Math.max(rowRect?.width ?? 280, shrutiRect?.width ?? 320);
+      const spanH = Math.max(rowRect?.height ?? 88, shrutiRect?.height ?? 88);
+
+      const slots = shrutiLetterRefs.current
+        .map((el) => {
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          return {
+            cx: r.left + r.width / 2,
+            cy: r.top + r.height / 2,
+            w: r.width,
+            h: r.height,
+          };
+        })
+        .filter((s): s is { cx: number; cy: number; w: number; h: number } => s !== null);
+
+      morphMetricsRef.current = { cx: stageCx, cy: stageCy, spanW, spanH, slots };
+
       const srcPts = sampleGlyphPixels(WORD_LETTERS, letterBodyRefs.current, vw, vh);
       const dstPts = sampleGlyphPixels(TARGET_LETTERS, shrutiLetterRefs.current, vw, vh);
-      morphParticlesRef.current = buildParticleSet(srcPts, dstPts, vw, vh);
+      morphParticlesRef.current = buildParticleSet(
+        srcPts,
+        dstPts,
+        vw,
+        stageCx,
+        stageCy
+      );
       morphDriverRef.current.progress = 0;
       morphDriverRef.current.active = morphParticlesRef.current.length > 0;
+
+      if (soundEnabled) {
+        audioSynth.playGentleChime(440);
+      }
     });
 
     if (hintRef.current) {
-      tl.to(hintRef.current, { opacity: 0, duration: 0.35, ease: "power1.out" }, "<");
+      tl.to(hintRef.current, { opacity: 0, duration: 0.25, ease: "power2.out" }, "<");
     }
 
     // Phase A -> B -> C driven deterministically from named timeline label
@@ -547,61 +749,77 @@ export function GirlBehindNameScene() {
       morphDriverRef.current,
       {
         progress: 1,
-        duration: 3.4,
-        ease: "power2.inOut",
+        duration: 3.3,
+        ease: "power3.inOut",
       },
       "morphStart"
     );
 
-    // Hide GHELI DOM row completely as Phase A dissolves (guaranteeing zero leftover glyphs)
+    // Hide GHELI DOM row cleanly right as laser slice dissolves the wordmark (zero ghost glyphs)
     if (gheliRowRef.current) {
       tl.to(
         gheliRowRef.current,
         {
           opacity: 0,
-          duration: 0.42,
-          ease: "power1.in",
+          duration: 0.28,
+          ease: "power3.in",
           onComplete: () => {
             if (gheliRowRef.current) {
               gheliRowRef.current.style.visibility = "hidden";
             }
           },
         },
-        "morphStart+=0.06"
+        "morphStart+=0.14"
       );
     }
 
-    // Prepare SHRUTI DOM container cleanly as Phase C particles converge onto target letters
+    // Reveal SHRUTI container cleanly for rhythmic mechanical tumbler slot-lock cadence
     if (shrutiRowRef.current) {
-      tl.set(shrutiRowRef.current, { opacity: 1, visibility: "visible" }, "morphStart+=2.55");
+      tl.set(shrutiRowRef.current, { opacity: 1, visibility: "visible" }, "morphStart+=2.18");
     }
 
-    // Staggered editorial materialization of SHRUTI letters inside target slots
+    // Crisp mechanical vertical slot-lock snap into final editorial baseline (zero leftover offset)
     tl.fromTo(
       shrutiLetterRefs.current.filter(Boolean),
-      { opacity: 0 },
+      { opacity: 0, y: -15, scaleY: 1.07 },
       {
         opacity: 1,
-        duration: 0.72,
-        stagger: 0.075,
-        ease: "power2.out",
+        y: 0,
+        scaleY: 1,
+        duration: 0.28,
+        stagger: 0.095,
+        ease: "power4.out",
       },
-      "morphStart+=2.58"
+      "morphStart+=2.22"
     );
 
-    // Deterministic cleanup of all morph particles immediately once SHRUTI finishes assembling
+    // Velvet spotlight release + deterministic wipe of all temporary canvas morph buffers
+    if (spotlightRef.current) {
+      tl.to(
+        spotlightRef.current,
+        {
+          scale: 1,
+          opacity: 1,
+          duration: 1.15,
+          ease: "power2.out",
+        },
+        "morphStart+=3.05"
+      );
+    }
+
     tl.call(
       () => {
         morphDriverRef.current.progress = 1;
         morphDriverRef.current.active = false;
         morphParticlesRef.current = [];
+        morphMetricsRef.current = null;
         setSweepActive(true);
         if (soundEnabled) {
           audioSynth.playGentleChime(659.25);
         }
       },
       [],
-      "morphStart+=3.7"
+      "morphStart+=3.42"
     );
 
     // ─── ACT V — RECOGNIZABLE DARK-PLUM PORTRAIT CAMOUFLAGE (ONLY AFTER SHRUTI LOCKS) ───
@@ -639,6 +857,7 @@ export function GirlBehindNameScene() {
       morphDriver.progress = 0;
       morphDriver.active = false;
       morphParticlesRef.current = [];
+      morphMetricsRef.current = null;
       gheliBodies.forEach((b) => {
         if (b) gsap.killTweensOf(b);
       });
